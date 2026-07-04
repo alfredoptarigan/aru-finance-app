@@ -27,6 +27,7 @@ const QUICK_ACTIONS = [
   { icon: 'arrow-up-circle', label: 'Pengeluaran', href: '/transaction-form?type=expense' },
   { icon: 'pie-chart', label: 'Budget', href: '/budget-form' },
   { icon: 'flag', label: 'Goal', href: '/goal-form' },
+  { icon: 'repeat', label: 'Subscription', href: '/(tabs)/subscriptions' },
 ] as const;
 
 function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -150,7 +151,7 @@ export default function Home() {
                 key={a.label}
                 onPress={() => router.push(a.href)}
                 className="items-center gap-1.5 active:opacity-70"
-                style={{ width: (width - 40) / 4 - 6 }}
+                style={{ width: (width - 40) / 5 - 6 }}
               >
                 <View className="h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 dark:bg-primary-dark/15">
                   <Ionicons name={a.icon} size={24} color={colors.primary} />

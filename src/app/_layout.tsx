@@ -62,6 +62,7 @@ export default function RootLayout() {
             <Stack.Screen name="transaction-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="goal-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="subscription-form" options={{ presentation: 'modal' }} />
           </Stack.Protected>
         </Stack>
       </QueryClientProvider>

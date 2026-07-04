@@ -10,6 +10,7 @@ export type PaymentMethodType =
   | 'other';
 
 export type GoalStatus = 'active' | 'completed' | 'cancelled';
+export type SubscriptionBillingCycle = 'weekly' | 'monthly' | 'yearly';
 
 export interface AuthUser {
   id: string;
@@ -70,6 +71,24 @@ export interface Transaction {
   updated_at: string;
   category?: Category;
   payment_method?: PaymentMethod;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string | null;
+  amount: number;
+  billing_cycle: SubscriptionBillingCycle;
+  next_billing_date: string; // 'YYYY-MM-DD'
+  category: string;
+  icon: string;
+  color: string;
+  payment_method?: string | null;
+  auto_debit: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Budget {
