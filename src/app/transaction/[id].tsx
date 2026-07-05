@@ -33,7 +33,7 @@ export default function TransactionDetail() {
       {
         text: 'Hapus',
         style: 'destructive',
-        onPress: () => deleteTx.mutate(id, { onSuccess: () => router.back() }),
+        onPress: () => deleteTx.mutate(id, { onSuccess: () => router.replace('/(tabs)/transactions') }),
       },
     ]);
 

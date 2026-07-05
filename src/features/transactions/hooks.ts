@@ -99,6 +99,7 @@ export function useDeleteTransaction() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: qk.transactions });
       const previous = queryClient.getQueriesData({ queryKey: qk.transactions });
+      queryClient.removeQueries({ queryKey: qk.transaction(id) });
       queryClient.setQueriesData(
         { queryKey: [...qk.transactions, 'list'] },
         (old: { pages: Paginated<Transaction>[] } | undefined) =>
@@ -115,6 +116,9 @@ export function useDeleteTransaction() {
     onError: (_e, _id, ctx) => {
       ctx?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
-    onSettled: invalidateMoneyData,
+    onSettled: (_data, _error, id) => {
+      queryClient.removeQueries({ queryKey: qk.transaction(id) });
+      invalidateMoneyData();
+    },
   });
 }

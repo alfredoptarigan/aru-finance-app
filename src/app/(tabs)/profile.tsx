@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
@@ -6,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
-import { useLogout, useMe } from '@/features/auth/hooks';
+import { useLogout, useMe, useUploadAvatar } from '@/features/auth/hooks';
+import { BASE_URL } from '@/lib/api';
 import { useThemeColors, useThemeStore, type ThemeMode } from '@/stores/theme';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -53,10 +55,45 @@ export default function Profile() {
   const colors = useThemeColors();
   const me = useMe();
   const logout = useLogout();
+  const uploadAvatar = useUploadAvatar();
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
   // ponytail: local-only toggle; wire to backend/expo-notifications when the feature exists
   const [notifications, setNotifications] = useState(true);
+
+  const profileAvatar = me.data?.profile.avatar_url;
+  const normalizeAvatar = (url?: string | null) => {
+    if (!url) return undefined;
+    if (url.startsWith('http') || url.startsWith('file:')) return url;
+    return `${BASE_URL.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+  };
+  const avatarUri = normalizeAvatar(uploadAvatar.data?.avatar_url ?? profileAvatar);
+
+  const pickAvatar = async () => {
+    if (uploadAvatar.isPending) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Izin dibutuhkan', 'Akses galeri dibutuhkan untuk upload foto profil.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: asset.uri,
+      name: asset.fileName ?? 'avatar.jpg',
+      type: asset.mimeType ?? 'image/jpeg',
+    } as unknown as Blob);
+    uploadAvatar.mutate(formData);
+  };
 
   const confirmLogout = () =>
     Alert.alert('Keluar?', 'Kamu harus login lagi untuk mengakses akunmu.', [
@@ -71,7 +108,18 @@ export default function Profile() {
 
         {/* User card */}
         <Card className="flex-row items-center gap-4">
-          <Avatar name={me.data?.profile.full_name} size={56} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={uploadAvatar.isPending ? 'Mengupload foto profil' : 'Upload foto profil'}
+            accessibilityState={{ busy: uploadAvatar.isPending, disabled: uploadAvatar.isPending }}
+            disabled={uploadAvatar.isPending}
+            onPress={pickAvatar}
+          >
+            <Avatar name={me.data?.profile.full_name} uri={avatarUri} size={64} />
+            <View className="absolute -bottom-1 -right-1 h-7 w-7 items-center justify-center rounded-full bg-primary dark:bg-primary-dark">
+              <Ionicons name={uploadAvatar.isPending ? 'hourglass-outline' : 'camera'} size={14} color="#fff" />
+            </View>
+          </Pressable>
           <View className="flex-1">
             <Text className="font-bold text-lg text-ink dark:text-ink-dark">
               {me.data?.profile.full_name ?? '…'}
@@ -79,6 +127,20 @@ export default function Profile() {
             <Text className="text-sm text-muted dark:text-muted-dark">
               {me.data?.user.email ?? ''}
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ganti foto profil"
+              accessibilityState={{ busy: uploadAvatar.isPending, disabled: uploadAvatar.isPending }}
+              onPress={pickAvatar}
+              disabled={uploadAvatar.isPending}
+            >
+              <Text className="mt-1 font-semibold text-xs text-primary dark:text-primary-dark">
+                {uploadAvatar.isPending ? 'Mengupload...' : 'Ganti foto profil'}
+              </Text>
+            </Pressable>
+            {uploadAvatar.error ? (
+              <Text className="mt-1 text-xs text-error dark:text-error-dark">{uploadAvatar.error.message}</Text>
+            ) : null}
           </View>
         </Card>
 

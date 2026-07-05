@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,7 +18,12 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useCreateSubscription } from '@/features/subscriptions/hooks';
+import {
+  useCreateSubscription,
+  useDeleteSubscription,
+  useSubscriptions,
+  useUpdateSubscription,
+} from '@/features/subscriptions/hooks';
 import { formatCurrency, formatDate } from '@/lib/currency';
 import { useThemeColors } from '@/stores/theme';
 import type { SubscriptionBillingCycle } from '@/types';
@@ -43,8 +49,14 @@ const cycles: { value: SubscriptionBillingCycle; label: string }[] = [
 const categories = ['Entertainment', 'Work tools', 'Insurance', 'Cloud', 'Other'];
 
 export default function SubscriptionForm() {
+  const params = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!params.id;
   const colors = useThemeColors();
+  const subscriptions = useSubscriptions();
   const create = useCreateSubscription();
+  const update = useUpdateSubscription(params.id ?? '');
+  const deleteSubscription = useDeleteSubscription();
+  const mutation = isEdit ? update : create;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [digits, setDigits] = useState('');
@@ -55,6 +67,19 @@ export default function SubscriptionForm() {
   const [autoDebit, setAutoDebit] = useState(true);
   const [active, setActive] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const sub = subscriptions.data?.find((item) => item.id === params.id);
+    if (!sub) return;
+    setName(sub.name);
+    setDescription(sub.description ?? '');
+    setDigits(String(Math.round(sub.amount)));
+    setCycle(sub.billing_cycle);
+    setDate(new Date(sub.next_billing_date));
+    setCategory(sub.category);
+    setAutoDebit(sub.auto_debit);
+    setActive(sub.is_active);
+  }, [params.id, subscriptions.data]);
 
   const submit = () => {
     const parsed = schema.safeParse({
@@ -77,13 +102,23 @@ export default function SubscriptionForm() {
       return;
     }
     setErrors({});
-    create.mutate(parsed.data, {
+    mutation.mutate(parsed.data, {
       onSuccess: () => {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.back();
       },
     });
   };
+
+  const confirmDelete = () =>
+    Alert.alert('Hapus subscription?', 'Subscription ini akan dihapus.', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: () => deleteSubscription.mutate(params.id!, { onSuccess: () => router.back() }),
+      },
+    ]);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
@@ -92,7 +127,9 @@ export default function SubscriptionForm() {
         className="flex-1"
       >
         <View className="flex-row items-center justify-between px-5 py-4">
-          <Text className="font-bold text-xl text-ink dark:text-ink-dark">Tambah Subscription</Text>
+          <Text className="font-bold text-xl text-ink dark:text-ink-dark">
+            {isEdit ? 'Edit Subscription' : 'Tambah Subscription'}
+          </Text>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.muted} />
           </Pressable>
@@ -223,7 +260,23 @@ export default function SubscriptionForm() {
             </Pressable>
           ))}
 
-          <Button title="Simpan Subscription" variant="gradient" loading={create.isPending} onPress={submit} />
+          {mutation.error ? (
+            <Text className="text-sm text-error dark:text-error-dark">{mutation.error.message}</Text>
+          ) : null}
+          <Button
+            title={isEdit ? 'Simpan Perubahan' : 'Simpan Subscription'}
+            variant="gradient"
+            loading={mutation.isPending}
+            onPress={submit}
+          />
+          {isEdit && (
+            <Button
+              title="Hapus Subscription"
+              variant="ghost"
+              loading={deleteSubscription.isPending}
+              onPress={confirmDelete}
+            />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -43,3 +43,17 @@ export function useCreateSubscription() {
     onSuccess: invalidateSubscriptions,
   });
 }
+
+export function useUpdateSubscription(id: string) {
+  return useMutation({
+    mutationFn: (body: Partial<SubscriptionInput>) => api.put<Subscription>(`/subscriptions/${id}`, body),
+    onSuccess: invalidateSubscriptions,
+  });
+}
+
+export function useDeleteSubscription() {
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/subscriptions/${id}`),
+    onSuccess: invalidateSubscriptions,
+  });
+}

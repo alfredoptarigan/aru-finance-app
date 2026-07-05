@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { gradients } from '@/constants/colors';
-import { useSubscriptions } from '@/features/subscriptions/hooks';
+import { useDeleteSubscription, useSubscriptions, useUpdateSubscription } from '@/features/subscriptions/hooks';
 import { formatCurrency, formatDate } from '@/lib/currency';
 import { useThemeColors } from '@/stores/theme';
 import type { Subscription } from '@/types';
@@ -36,7 +36,20 @@ function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: n
 
 function SubscriptionCard({ sub }: { sub: Subscription }) {
   const colors = useThemeColors();
+  const update = useUpdateSubscription(sub.id);
+  const deleteSubscription = useDeleteSubscription();
   const due = daysUntil(sub.next_billing_date);
+  const busy = update.isPending || deleteSubscription.isPending;
+
+  const confirmDelete = () =>
+    Alert.alert('Hapus subscription?', `"${sub.name}" akan dihapus.`, [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: () => deleteSubscription.mutate(sub.id),
+      },
+    ]);
 
   return (
     <Card className="gap-4">
@@ -71,7 +84,11 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
             </Text>
           </View>
         </View>
-        <View
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: sub.is_active, disabled: busy }}
+          disabled={busy}
+          onPress={() => update.mutate({ is_active: !sub.is_active })}
           className={`h-7 w-12 justify-center rounded-full px-1 ${
             sub.is_active
               ? 'items-end bg-secondary dark:bg-secondary-dark'
@@ -79,7 +96,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
           }`}
         >
           <View className="h-5 w-5 rounded-full bg-white" />
-        </View>
+        </Pressable>
       </View>
 
       <View>
@@ -110,10 +127,17 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
       </View>
 
       <View className="flex-row gap-2">
-        <Pressable className="rounded-xl bg-primary/10 px-3.5 py-2 active:opacity-70 dark:bg-primary-dark/15">
+        <Pressable
+          onPress={() => router.push(`/subscription-form?id=${sub.id}`)}
+          className="rounded-xl bg-primary/10 px-3.5 py-2 active:opacity-70 dark:bg-primary-dark/15"
+        >
           <Text className="font-semibold text-xs text-primary dark:text-primary-dark">Edit</Text>
         </Pressable>
-        <Pressable className="rounded-xl bg-error/10 px-3.5 py-2 active:opacity-70 dark:bg-error-dark/15">
+        <Pressable
+          disabled={deleteSubscription.isPending}
+          onPress={confirmDelete}
+          className="rounded-xl bg-error/10 px-3.5 py-2 active:opacity-70 dark:bg-error-dark/15"
+        >
           <Text className="font-semibold text-xs text-error dark:text-error-dark">Delete</Text>
         </Pressable>
       </View>

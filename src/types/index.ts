@@ -13,6 +13,13 @@ export type GoalStatus = 'active' | 'completed' | 'cancelled';
 export type SubscriptionBillingCycle = 'weekly' | 'monthly' | 'yearly';
 export type UpcomingBillSource = 'subscription';
 export type UpcomingBillStatus = 'overdue' | 'due_today' | 'upcoming';
+export type BudgetPlanStatus = 'draft' | 'active' | 'closed';
+export type BudgetPlanSource = 'manual' | 'balance_snapshot';
+export type BudgetAllocationKind = 'expense' | 'saving' | 'investment';
+export type BudgetPlanBucketKey = 'operational' | 'fun' | 'investing';
+export type BudgetAllocationStatus = 'safe' | 'warning' | 'exhausted' | 'overbudget';
+export type SummaryItemKind = 'bill' | 'budget' | 'goal' | 'cashflow';
+export type SummaryItemSeverity = 'info' | 'warning' | 'danger' | 'success';
 
 export interface AuthUser {
   id: string;
@@ -31,6 +38,13 @@ export interface Profile {
 export interface Me {
   user: AuthUser;
   profile: Profile;
+}
+
+
+export interface AvatarUploadResponse {
+  profile: Profile;
+  avatar_path: string;
+  avatar_url: string;
 }
 
 export interface Session {
@@ -135,6 +149,90 @@ export interface Budget {
   usage_percent: number;
 }
 
+
+export interface BudgetPlan {
+  id: string;
+  user_id: string;
+  month: number;
+  year: number;
+  source: BudgetPlanSource;
+  available_amount: number;
+  balance_snapshot_amount: number | null;
+  balance_snapshot_at: string | null;
+  allocated_amount: number;
+  unallocated_amount: number;
+  total_percent: number;
+  status: BudgetPlanStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  buckets?: BudgetPlanBucket[];
+  allocations?: BudgetPlanAllocation[];
+  summary: BudgetPlanSummary;
+}
+
+
+export interface BudgetPlanAvailableBalance {
+  month: number;
+  year: number;
+  available_balance: number;
+  income_month_to_date: number;
+  expense_month_to_date: number;
+  unpaid_committed_amount: number;
+  calculated_at: string;
+}
+
+export interface BudgetPlanBucket {
+  id: string;
+  plan_id: string;
+  bucket_key: BudgetPlanBucketKey;
+  name: string;
+  icon: string;
+  color: string;
+  percent: number;
+  planned_amount: number;
+  actual_amount: number;
+  remaining_amount: number;
+  usage_percent: number;
+  status: BudgetAllocationStatus;
+  category_ids: string[];
+  category_names: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetPlanAllocation {
+  id: string;
+  plan_id: string;
+  category_id: string | null;
+  goal_id: string | null;
+  kind: BudgetAllocationKind;
+  name: string;
+  icon: string;
+  color: string;
+  percent: number;
+  planned_amount: number;
+  actual_amount: number;
+  remaining_amount: number;
+  usage_percent: number;
+  status: BudgetAllocationStatus;
+  budget_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetPlanSummary {
+  spent_amount: number;
+  invested_amount: number;
+  remaining_amount: number;
+  overbudget_amount: number;
+  warning_count: number;
+  exhausted_count: number;
+  overbudget_count: number;
+  daily_safe_to_spend: number;
+  days_left_in_month: number;
+}
+
 export interface Goal {
   id: string;
   user_id: string;
@@ -159,6 +257,77 @@ export interface DashboardSummary {
   recentTransactions: Transaction[];
   month: number;
   year: number;
+}
+
+export interface TodaySummary {
+  date: string;
+  week_start: string;
+  week_end: string;
+  month: number;
+  year: number;
+  cashflow: CashflowSnapshot;
+  bills: BillsSnapshot;
+  budgets: BudgetSnapshot[];
+  goals: GoalSnapshot[];
+  items: SummaryItem[];
+}
+
+export interface CashflowSnapshot {
+  income_month_to_date: number;
+  expense_month_to_date: number;
+  balance_month_to_date: number;
+  savings_rate: number;
+}
+
+export interface BillsSnapshot {
+  due_today_count: number;
+  due_this_week_count: number;
+  due_this_week_total: number;
+  nearest_due: SummaryBill | null;
+}
+
+export interface SummaryBill {
+  id: string;
+  source: UpcomingBillSource;
+  source_id: string;
+  name: string;
+  amount: number;
+  due_date: string;
+  status: UpcomingBillStatus;
+  auto_debit: boolean;
+  payment_method: string | null;
+}
+
+export interface BudgetSnapshot {
+  id: string;
+  category_id: string;
+  category_name: string;
+  icon: string;
+  color: string;
+  limit_amount: number;
+  spent_amount: number;
+  usage_percent: number;
+  remaining_amount: number;
+}
+
+export interface GoalSnapshot {
+  id: string;
+  title: string;
+  target_amount: number;
+  current_amount: number;
+  progress_percent: number;
+  remaining_amount: number;
+  deadline: string | null;
+}
+
+export interface SummaryItem {
+  id: string;
+  kind: SummaryItemKind;
+  severity: SummaryItemSeverity;
+  title: string;
+  subtitle: string;
+  amount: number | null;
+  route: string | null;
 }
 
 export interface MonthlyTrendPoint {

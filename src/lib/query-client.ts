@@ -12,6 +12,7 @@ export const queryClient = new QueryClient({
 export const qk = {
   me: ['me'] as const,
   summary: ['dashboard', 'summary'] as const,
+  todaySummary: ['dashboard', 'today-summary'] as const,
   charts: ['dashboard', 'charts'] as const,
   insights: ['insights'] as const,
   transactions: ['transactions'] as const,
@@ -21,5 +22,9 @@ export const qk = {
   categories: ['categories'] as const,
   paymentMethods: ['payment-methods'] as const,
   budgets: (month: number, year: number) => ['budgets', year, month] as const,
+  budgetPlan: (month: number, year: number) => ['budget-plans', year, month] as const,
+  budgetPlanAvailableBalance: (month: number, year: number) =>
+    ['budget-plans', 'available-balance', year, month] as const,
+  budgetPlanTemplates: ['budget-plans', 'templates'] as const,
   goals: ['goals'] as const,
 };

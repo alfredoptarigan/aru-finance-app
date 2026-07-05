@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api';
-import { qk } from '@/lib/query-client';
+import { qk, queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth';
-import type { AuthUser, Me, Session } from '@/types';
+import type { AuthUser, AvatarUploadResponse, Me, Session } from '@/types';
 
 interface AuthPayload {
   user: AuthUser;
@@ -37,6 +37,16 @@ export function useRegister() {
       api.post<AuthPayload>('/auth/register', body),
     onSuccess: async ({ session }) => {
       await signIn(session.access_token);
+    },
+  });
+}
+
+
+export function useUploadAvatar() {
+  return useMutation({
+    mutationFn: (formData: FormData) => api.uploadAvatar(formData),
+    onSuccess: ({ profile }: AvatarUploadResponse) => {
+      queryClient.setQueryData<Me>(qk.me, (old) => (old ? { ...old, profile } : old));
     },
   });
 }
