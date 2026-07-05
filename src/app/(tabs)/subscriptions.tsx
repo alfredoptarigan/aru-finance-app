@@ -122,6 +122,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
 }
 
 export default function Subscriptions() {
+  const colors = useThemeColors();
   const subscriptions = useSubscriptions();
   const items = subscriptions.data ?? [];
   const active = items.filter((s) => s.is_active);
@@ -135,9 +136,17 @@ export default function Subscriptions() {
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <ScrollView contentContainerClassName="gap-5 px-5 pb-28 pt-2">
         <Section>
-          <View>
-            <Text className="text-sm text-muted dark:text-muted-dark">Recurring payments</Text>
-            <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Subscription</Text>
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-sm text-muted dark:text-muted-dark">Recurring payments</Text>
+              <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Subscription</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push('/upcoming-bills')}
+              className="h-11 w-11 items-center justify-center rounded-full bg-card active:opacity-80 dark:bg-card-dark"
+            >
+              <Ionicons name="calendar-outline" size={21} color={colors.primary} />
+            </Pressable>
           </View>
         </Section>
 

@@ -11,6 +11,8 @@ export type PaymentMethodType =
 
 export type GoalStatus = 'active' | 'completed' | 'cancelled';
 export type SubscriptionBillingCycle = 'weekly' | 'monthly' | 'yearly';
+export type UpcomingBillSource = 'subscription';
+export type UpcomingBillStatus = 'overdue' | 'due_today' | 'upcoming';
 
 export interface AuthUser {
   id: string;
@@ -92,6 +94,31 @@ export interface Subscription {
   auto_create_transaction: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface UpcomingBill {
+  id: string;
+  source: UpcomingBillSource;
+  source_id: string;
+  name: string;
+  amount: number;
+  due_date: string; // 'YYYY-MM-DD'
+  status: UpcomingBillStatus;
+  category: string;
+  icon: string;
+  color: string;
+  auto_debit: boolean;
+  payment_method: string | null;
+}
+
+export interface UpcomingBillsSummary {
+  total_amount: number;
+  bill_count: number;
+  due_today_count: number;
+  overdue_count: number;
+  auto_debit_total: number;
+  manual_payment_total: number;
+  nearest_due: UpcomingBill | null;
 }
 
 export interface Budget {

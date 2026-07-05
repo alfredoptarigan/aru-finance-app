@@ -188,6 +188,7 @@ export default function Home() {
                 hideYAxisText
                 yAxisThickness={0}
                 xAxisThickness={0}
+                xAxisLabelTextStyle={{ color: colors.muted, fontSize: 10 }}
                 height={120}
                 adjustToWidth
                 parentWidth={width - 88}

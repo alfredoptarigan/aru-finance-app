@@ -60,6 +60,7 @@ export default function Insights() {
               hideYAxisText
               yAxisThickness={0}
               xAxisThickness={0}
+              xAxisLabelTextStyle={{ color: colors.muted, fontSize: 10 }}
               height={150}
               adjustToWidth
               parentWidth={width - 88}
