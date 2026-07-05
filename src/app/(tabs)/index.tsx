@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, router } from 'expo-router';
 import { MotiView } from 'moti';
+import { useState } from 'react';
 import { Dimensions, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,6 +45,7 @@ function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: n
 
 export default function Home() {
   const colors = useThemeColors();
+  const [hideBalance, setHideBalance] = useState(true);
   const me = useMe();
   const summary = useSummary();
   const charts = useCharts();
@@ -96,8 +98,24 @@ export default function Home() {
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: 28, padding: 22 }}
             >
-              <Text className="text-sm text-white/70">Total Saldo</Text>
-              <AmountText amount={summary.data?.balance ?? 0} tone="inverse" size="xl" />
+              <View className="flex-row items-start justify-between gap-3">
+                <View className="flex-1">
+                  <Text className="text-sm text-white/70">Total Saldo</Text>
+                  {hideBalance ? (
+                    <Text className="mt-1 font-extrabold text-4xl text-white">Rp••••••••</Text>
+                  ) : (
+                    <AmountText amount={summary.data?.balance ?? 0} tone="inverse" size="xl" />
+                  )}
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={hideBalance ? 'Tampilkan saldo' : 'Sembunyikan saldo'}
+                  onPress={() => setHideBalance((value) => !value)}
+                  className="h-11 w-11 items-center justify-center rounded-2xl bg-white/15 active:opacity-80"
+                >
+                  <Ionicons name={hideBalance ? 'eye-off-outline' : 'eye-outline'} size={22} color="#fff" />
+                </Pressable>
+              </View>
               <View className="mt-5 flex-row gap-3">
                 <View className="flex-1 rounded-2xl bg-white/15 p-3">
                   <View className="flex-row items-center gap-1.5">
@@ -105,7 +123,7 @@ export default function Home() {
                     <Text className="text-xs text-white/80">Pemasukan</Text>
                   </View>
                   <Text className="mt-1 font-bold text-base text-white">
-                    {formatCurrency(summary.data?.income ?? 0)}
+                    {hideBalance ? 'Rp••••••••' : formatCurrency(summary.data?.income ?? 0)}
                   </Text>
                 </View>
                 <View className="flex-1 rounded-2xl bg-white/15 p-3">
@@ -114,7 +132,7 @@ export default function Home() {
                     <Text className="text-xs text-white/80">Pengeluaran</Text>
                   </View>
                   <Text className="mt-1 font-bold text-base text-white">
-                    {formatCurrency(summary.data?.expense ?? 0)}
+                    {hideBalance ? 'Rp••••••••' : formatCurrency(summary.data?.expense ?? 0)}
                   </Text>
                 </View>
               </View>
