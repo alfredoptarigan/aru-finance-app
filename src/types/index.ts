@@ -64,7 +64,7 @@ export interface Transaction {
   amount: number;
   category_id: string;
   title: string;
-  description?: string | null;
+  description: string | null;
   transaction_date: string; // 'YYYY-MM-DD'
   payment_method_id?: string | null;
   created_at: string;
@@ -84,9 +84,12 @@ export interface Subscription {
   category: string;
   icon: string;
   color: string;
-  payment_method?: string | null;
+  payment_method_id: string | null;
+  payment_method: string | null;
   auto_debit: boolean;
   is_active: boolean;
+  reminder_days_before: number[];
+  auto_create_transaction: boolean;
   created_at: string;
   updated_at: string;
 }

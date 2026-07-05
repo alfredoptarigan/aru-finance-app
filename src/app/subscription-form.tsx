@@ -29,7 +29,7 @@ const schema = z.object({
   billing_cycle: z.enum(['weekly', 'monthly', 'yearly']),
   next_billing_date: z.string(),
   category: z.string().min(1, 'Kategori wajib diisi'),
-  payment_method: z.string().nullable().optional(),
+  payment_method_id: z.string().nullable().optional(),
   auto_debit: z.boolean(),
   is_active: z.boolean(),
 });
@@ -52,7 +52,6 @@ export default function SubscriptionForm() {
   const [date, setDate] = useState(new Date());
   const [showDate, setShowDate] = useState(false);
   const [category, setCategory] = useState('Entertainment');
-  const [paymentMethod, setPaymentMethod] = useState('Rekening gaji');
   const [autoDebit, setAutoDebit] = useState(true);
   const [active, setActive] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,7 +64,7 @@ export default function SubscriptionForm() {
       billing_cycle: cycle,
       next_billing_date: date.toISOString().slice(0, 10),
       category,
-      payment_method: paymentMethod.trim() || null,
+      payment_method_id: null,
       auto_debit: autoDebit,
       is_active: active,
     });
@@ -87,7 +86,7 @@ export default function SubscriptionForm() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -131,14 +130,6 @@ export default function SubscriptionForm() {
             value={description}
             onChangeText={setDescription}
           />
-          <Input
-            label="Metode pembayaran"
-            icon="card-outline"
-            placeholder="Contoh: Rekening gaji"
-            value={paymentMethod}
-            onChangeText={setPaymentMethod}
-          />
-
           <View className="gap-2">
             <Text className="font-medium text-sm text-ink dark:text-ink-dark">Billing cycle</Text>
             <View className="flex-row gap-2">

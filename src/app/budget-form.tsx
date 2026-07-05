@@ -71,7 +71,7 @@ export default function BudgetForm() {
     ]);
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
       <View className="flex-row items-center justify-between px-5 py-4">
         <Text className="font-bold text-xl text-ink dark:text-ink-dark">
           {isEdit ? 'Edit Budget' : 'Tambah Budget'}

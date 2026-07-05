@@ -122,6 +122,7 @@ export default function Transactions() {
   const colors = useThemeColors();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [type, setType] = useState<'income' | 'expense' | undefined>();
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [datePreset, setDatePreset] = useState<string | undefined>();
@@ -141,59 +142,107 @@ export default function Transactions() {
   const list = useTransactions(filters);
   const categories = useCategories();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const categoryLabel = categories.data?.find((c) => c.id === categoryId)?.name ?? 'Semua kategori';
+  const typeLabel = TYPE_FILTERS.find((f) => f.value === type)?.label ?? 'Semua';
+  const dateLabel = DATE_FILTERS.find((f) => f.from === datePreset)?.label ?? 'Semua waktu';
+  const hasFilters = !!type || !!categoryId || !!datePreset;
+  const resetFilters = () => {
+    setType(undefined);
+    setCategoryId(undefined);
+    setDatePreset(undefined);
+  };
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <View className="gap-3 px-5 pb-3 pt-2">
-        <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Transaksi</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Transaksi</Text>
+          <Pressable
+            onPress={() => setFiltersOpen((open) => !open)}
+            className={`h-11 w-11 items-center justify-center rounded-2xl active:opacity-70 ${
+              filtersOpen || hasFilters
+                ? 'bg-primary dark:bg-primary-dark'
+                : 'bg-card dark:bg-card-dark'
+            }`}
+          >
+            <Ionicons
+              name="options-outline"
+              size={22}
+              color={filtersOpen || hasFilters ? '#fff' : colors.muted}
+            />
+          </Pressable>
+        </View>
         <Input
           icon="search-outline"
           placeholder="Cari transaksi…"
           value={search}
           onChangeText={setSearch}
         />
-        <View className="flex-row gap-2">
-          {TYPE_FILTERS.map((f) => (
-            <Chip
-              key={f.label}
-              label={f.label}
-              active={type === f.value}
-              onPress={() => setType(f.value)}
-            />
-          ))}
-        </View>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={[undefined, ...(categories.data ?? [])] as const}
-          keyExtractor={(c) => c?.id ?? 'all'}
-          contentContainerClassName="gap-2"
-          renderItem={({ item: c }) =>
-            c === undefined ? (
-              <Chip
-                label="Semua kategori"
-                active={!categoryId}
-                onPress={() => setCategoryId(undefined)}
+        <Text className="text-xs text-muted dark:text-muted-dark">
+          {typeLabel} · {categoryLabel} · {dateLabel}
+        </Text>
+        {filtersOpen ? (
+          <View className="gap-4 rounded-3xl bg-card p-4 dark:bg-card-dark">
+            <View className="gap-2">
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Jenis</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {TYPE_FILTERS.map((f) => (
+                  <Chip
+                    key={f.label}
+                    label={f.label}
+                    active={type === f.value}
+                    onPress={() => setType(f.value)}
+                  />
+                ))}
+              </View>
+            </View>
+            <View className="gap-2">
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Kategori</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={[undefined, ...(categories.data ?? [])] as const}
+                keyExtractor={(c) => c?.id ?? 'all'}
+                contentContainerClassName="gap-2"
+                renderItem={({ item: c }) =>
+                  c === undefined ? (
+                    <Chip
+                      label="Semua kategori"
+                      active={!categoryId}
+                      onPress={() => setCategoryId(undefined)}
+                    />
+                  ) : (
+                    <Chip
+                      label={c.name}
+                      active={categoryId === c.id}
+                      onPress={() => setCategoryId(categoryId === c.id ? undefined : c.id)}
+                    />
+                  )
+                }
               />
-            ) : (
-              <Chip
-                label={c.name}
-                active={categoryId === c.id}
-                onPress={() => setCategoryId(categoryId === c.id ? undefined : c.id)}
-              />
-            )
-          }
-        />
-        <View className="flex-row gap-2">
-          {DATE_FILTERS.map((f) => (
-            <Chip
-              key={f.label}
-              label={f.label}
-              active={datePreset === f.from}
-              onPress={() => setDatePreset(f.from)}
-            />
-          ))}
-        </View>
+            </View>
+            <View className="gap-2">
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Waktu</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {DATE_FILTERS.map((f) => (
+                  <Chip
+                    key={f.label}
+                    label={f.label}
+                    active={datePreset === f.from}
+                    onPress={() => setDatePreset(f.from)}
+                  />
+                ))}
+              </View>
+            </View>
+            {hasFilters ? (
+              <Pressable onPress={resetFilters} className="self-start active:opacity-70">
+                <Text className="font-semibold text-xs text-error dark:text-error-dark">
+                  Reset filter
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {list.isPending ? (

@@ -108,7 +108,7 @@ export default function TransactionForm() {
   };
 
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"

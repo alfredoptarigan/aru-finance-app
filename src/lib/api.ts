@@ -56,7 +56,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(message, res.status, details);
   }
 
-  return (json as { data: T } | null)?.data as T;
+  if (json?.success !== true || !('data' in json)) {
+    throw new ApiError(`Format response tidak valid (${res.status})`, res.status);
+  }
+
+  return json.data;
 }
 
 export const api = {

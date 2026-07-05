@@ -16,6 +16,10 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { queryClient } from '@/lib/query-client';
+import {
+  observeSubscriptionNotifications,
+  registerForPushNotifications,
+} from '@/lib/push-notifications';
 import { useAuthStore } from '@/stores/auth';
 
 void SplashScreen.preventAutoHideAsync();
@@ -39,6 +43,18 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded && status !== 'loading') void SplashScreen.hideAsync();
   }, [fontsLoaded, status]);
+
+  useEffect(() => {
+    if (status !== 'authed') return;
+    return observeSubscriptionNotifications();
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== 'authed') return;
+    void registerForPushNotifications().catch((error) => {
+      console.warn('Push registration failed', error);
+    });
+  }, [status]);
 
   if (!fontsLoaded || status === 'loading') return null;
 

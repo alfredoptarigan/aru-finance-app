@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { gradients } from '@/constants/colors';
 import { useSubscriptions } from '@/features/subscriptions/hooks';
 import { formatCurrency, formatDate } from '@/lib/currency';
@@ -184,7 +185,21 @@ export default function Subscriptions() {
           </View>
         </Section>
 
-        {items.length === 0 ? (
+        {subscriptions.isError ? (
+          <Card>
+            <EmptyState
+              icon="cloud-offline-outline"
+              title="Subscription gagal dimuat"
+              subtitle="Tarik untuk mencoba lagi atau cek koneksi server."
+            />
+          </Card>
+        ) : subscriptions.isPending ? (
+          <View className="gap-2.5">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-44 w-full rounded-3xl" />
+            ))}
+          </View>
+        ) : items.length === 0 ? (
           <Section delay={180}>
             <Card>
               <EmptyState

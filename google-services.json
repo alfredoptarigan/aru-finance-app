@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "151429743895",
+    "project_id": "aru-fintech",
+    "storage_bucket": "aru-fintech.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151429743895:android:0b33b50c4c75c99af56352",
+        "android_client_info": {
+          "package_name": "com.alfredoptarigan.arufintech"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-6lABx4M7P8lTcoQ3cy9d5Lc-LpIGeyQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
