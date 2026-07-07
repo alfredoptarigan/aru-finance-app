@@ -25,7 +25,7 @@ export function useLogin() {
     mutationFn: (body: { email: string; password: string }) =>
       api.post<AuthPayload>('/auth/login', body),
     onSuccess: async ({ session }) => {
-      await signIn(session.access_token);
+      await signIn(session);
     },
   });
 }
@@ -36,7 +36,7 @@ export function useRegister() {
     mutationFn: (body: { email: string; password: string; full_name: string }) =>
       api.post<AuthPayload>('/auth/register', body),
     onSuccess: async ({ session }) => {
-      await signIn(session.access_token);
+      await signIn(session);
     },
   });
 }

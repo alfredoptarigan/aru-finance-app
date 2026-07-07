@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 
-import { setAuthToken, setOnUnauthorized } from '@/lib/api';
+import { setAuthTokens, setOnSessionRefreshed, setOnUnauthorized } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
 import { storage } from '@/lib/storage';
+import type { Session } from '@/types';
 
 type AuthStatus = 'loading' | 'authed' | 'guest';
 
@@ -10,7 +11,7 @@ interface AuthState {
   status: AuthStatus;
   onboarded: boolean;
   hydrate: () => Promise<void>;
-  signIn: (token: string) => Promise<void>;
+  signIn: (session: Session) => Promise<void>;
   signOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
 }
@@ -20,23 +21,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   onboarded: false,
 
   hydrate: async () => {
-    const [token, onboarded] = await Promise.all([storage.getToken(), storage.isOnboarded()]);
-    setAuthToken(token);
+    const [{ accessToken, refreshToken }, onboarded] = await Promise.all([
+      storage.getTokens(),
+      storage.isOnboarded(),
+    ]);
+    setAuthTokens(accessToken, refreshToken);
+    setOnSessionRefreshed((session) =>
+      storage.setTokens(session.access_token, session.refresh_token).then(() => undefined),
+    );
     setOnUnauthorized(() => {
       void useAuthStore.getState().signOut();
     });
-    set({ status: token ? 'authed' : 'guest', onboarded });
+    set({ status: accessToken ? 'authed' : 'guest', onboarded });
   },
 
-  signIn: async (token) => {
-    await storage.setToken(token);
-    setAuthToken(token);
+  signIn: async (session) => {
+    await storage.setTokens(session.access_token, session.refresh_token);
+    setAuthTokens(session.access_token, session.refresh_token);
     set({ status: 'authed' });
   },
 
   signOut: async () => {
-    await storage.clearToken();
-    setAuthToken(null);
+    await storage.clearTokens();
+    setAuthTokens(null, null);
     queryClient.clear();
     set({ status: 'guest' });
   },

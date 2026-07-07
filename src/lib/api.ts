@@ -1,4 +1,4 @@
-import type { ApiResponse, AvatarUploadResponse } from '@/types';
+import type { ApiResponse, AvatarUploadResponse, Session } from '@/types';
 
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -62,19 +62,57 @@ export class ApiError extends Error {
   }
 }
 
-// ponytail: module-level token, hydrated from SecureStore by the auth store at boot
+// ponytail: module-level tokens, hydrated from SecureStore by the auth store at boot.
 let authToken: string | null = null;
+let refreshToken: string | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 let onUnauthorized: (() => void) | null = null;
+let onSessionRefreshed: ((session: Session) => Promise<void>) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+export function setAuthTokens(accessToken: string | null, nextRefreshToken: string | null) {
+  authToken = accessToken;
+  refreshToken = nextRefreshToken;
 }
 
 export function setOnUnauthorized(handler: () => void) {
   onUnauthorized = handler;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export function setOnSessionRefreshed(handler: (session: Session) => Promise<void>) {
+  onSessionRefreshed = handler;
+}
+
+async function refreshSession() {
+  if (!refreshToken) return null;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    const json = (await res.json().catch(() => null)) as ApiResponse<{ session: Session }> | null;
+    logHttp('POST', '/auth/refresh', res.status, { refresh_token: refreshToken }, json);
+
+    if (!res.ok || json?.success !== true || !('data' in json)) return null;
+
+    const { session } = json.data;
+    setAuthTokens(session.access_token, session.refresh_token);
+    await onSessionRefreshed?.(session);
+    return session.access_token;
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function request<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const method = init.method ?? 'GET';
   const requestBody = parseBody(init.body);
   let res: Response;
@@ -96,6 +134,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   logHttp(method, path, res.status, requestBody, json);
 
   if (res.status === 401) {
+    if (!retried && path !== '/auth/refresh' && (await refreshSession())) {
+      return request<T>(path, init, true);
+    }
     onUnauthorized?.();
     throw new ApiError('Sesi kamu berakhir. Silakan login kembali.', 401);
   }
@@ -117,7 +158,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 
-async function uploadAvatar(formData: FormData): Promise<AvatarUploadResponse> {
+async function uploadAvatar(formData: FormData, retried = false): Promise<AvatarUploadResponse> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api/me/avatar`, {
@@ -134,6 +175,7 @@ async function uploadAvatar(formData: FormData): Promise<AvatarUploadResponse> {
   logHttp('POST', '/me/avatar', res.status, '[multipart avatar]', json);
 
   if (res.status === 401) {
+    if (!retried && (await refreshSession())) return uploadAvatar(formData, true);
     onUnauthorized?.();
     throw new ApiError('Sesi kamu berakhir. Silakan login kembali.', 401);
   }
