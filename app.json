@@ -1,23 +1,22 @@
 {
   "expo": {
-    "name": "aru-finance-app",
+    "name": "Ledgeria",
     "slug": "aru-finance-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/appstore-icon.png",
     "scheme": "arufinanceapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.alfredoptarigan.arufintech",
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/appstore-icon.png"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
+      "icon": "./assets/images/playstore-icon.png",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/playstore-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.alfredoptarigan.arufintech"

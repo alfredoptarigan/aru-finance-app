@@ -157,22 +157,36 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
   return json.data;
 }
 
+function uploadMultipart(url: string, body: FormData, headers?: Record<string, string>) {
+  return new Promise<{ status: number; ok: boolean; json: () => Promise<unknown> }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    Object.entries(headers ?? {}).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.onload = () =>
+      resolve({
+        status: xhr.status,
+        ok: xhr.status >= 200 && xhr.status < 300,
+        json: async () => JSON.parse(xhr.responseText),
+      });
+    xhr.onerror = () => reject(new Error('XMLHttpRequest failed'));
+    xhr.send(body);
+  });
+}
+
 
 async function uploadAvatar(formData: FormData, retried = false): Promise<AvatarUploadResponse> {
-  let res: Response;
+  const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+  let res: { status: number; ok: boolean; json: () => Promise<unknown> };
   try {
-    res = await fetch(`${BASE_URL}/api/me/avatar`, {
-      method: 'POST',
-      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-      body: formData,
-    });
-  } catch {
-    logHttp('POST', '/me/avatar', 'NETWORK_ERROR', '[multipart avatar]', undefined);
+    res = await uploadMultipart(`${BASE_URL}/api/me/avatar`, formData, headers);
+  } catch (error) {
+    if (__DEV__) console.log('Avatar upload failed before server response', error);
+    logHttp('POST', '/api/me/avatar', 'NETWORK_ERROR', '[multipart avatar]', undefined);
     throw new ApiError('Tidak dapat terhubung ke server. Periksa koneksi kamu.', 'NETWORK_ERROR');
   }
 
   const json = (await res.json().catch(() => null)) as ApiResponse<AvatarUploadResponse> | null;
-  logHttp('POST', '/me/avatar', res.status, '[multipart avatar]', json);
+  logHttp('POST', '/api/me/avatar', res.status, '[multipart avatar]', json);
 
   if (res.status === 401) {
     if (!retried && (await refreshSession())) return uploadAvatar(formData, true);

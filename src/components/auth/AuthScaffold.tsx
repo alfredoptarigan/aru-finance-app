@@ -37,7 +37,7 @@ export function AuthScaffold({
           >
             <Ionicons name="analytics-outline" size={24} color="white" />
           </LinearGradient>
-          <Text className="font-extrabold text-3xl text-ink dark:text-ink-dark">FinTrack</Text>
+          <Text className="font-extrabold text-3xl text-ink dark:text-ink-dark">Ledgeria</Text>
         </View>
 
         <Text className="font-extrabold text-3xl leading-10 text-ink dark:text-ink-dark">{title}</Text>

@@ -22,7 +22,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'fintrack.theme',
+      name: 'ledgeria.theme',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (state) colorScheme.set(state.mode);

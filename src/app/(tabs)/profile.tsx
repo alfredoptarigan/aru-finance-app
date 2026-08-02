@@ -17,6 +17,13 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionic
   { value: 'system', label: 'Sistem', icon: 'phone-portrait-outline' },
 ];
 
+const AVATAR_MIME_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
 function MenuRow({
   icon,
   label,
@@ -86,11 +93,22 @@ export default function Profile() {
 
     if (result.canceled) return;
     const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? 'image/jpeg';
+    const extension = AVATAR_MIME_EXT[mimeType];
+    if (!extension) {
+      Alert.alert('Format tidak didukung', 'Pilih gambar JPG, PNG, atau WebP.');
+      return;
+    }
+    if (asset.fileSize && asset.fileSize > MAX_AVATAR_BYTES) {
+      Alert.alert('File terlalu besar', 'Ukuran avatar maksimal 2MB.');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('avatar', {
       uri: asset.uri,
-      name: asset.fileName ?? 'avatar.jpg',
-      type: asset.mimeType ?? 'image/jpeg',
+      name: asset.fileName ?? `avatar.${extension}`,
+      type: mimeType,
     } as unknown as Blob);
     uploadAvatar.mutate(formData);
   };
@@ -208,7 +226,7 @@ export default function Profile() {
         </Pressable>
 
         <Text className="text-center text-xs text-muted dark:text-muted-dark">
-          FinTrack v1.0.0
+          Ledgeria v1.0.0
         </Text>
       </ScrollView>
     </SafeAreaView>

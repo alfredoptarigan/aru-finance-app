@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 
-const ACCESS_TOKEN_KEY = 'fintrack.token';
-const REFRESH_TOKEN_KEY = 'fintrack.refreshToken';
-const ONBOARDED_KEY = 'fintrack.onboarded';
+const ACCESS_TOKEN_KEY = 'ledgeria.token';
+const REFRESH_TOKEN_KEY = 'ledgeria.refreshToken';
+const ONBOARDED_KEY = 'ledgeria.onboarded';
 
 export const storage = {
   getTokens: async () => {

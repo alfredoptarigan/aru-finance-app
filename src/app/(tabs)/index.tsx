@@ -107,7 +107,7 @@ function SummaryItemCard({ item }: { item: SummaryItem }) {
   );
 }
 
-function TodaySummaryCard({ data }: { data: TodaySummary }) {
+function TodaySummaryCard({ data, hideBalance }: { data: TodaySummary; hideBalance: boolean }) {
   const colors = useThemeColors();
   const topItems = data.items.slice(0, 3);
   const topBudget = data.budgets[0];
@@ -142,7 +142,7 @@ function TodaySummaryCard({ data }: { data: TodaySummary }) {
         <View className="flex-1 rounded-2xl bg-white/15 p-3">
           <Text className="text-xs text-white/70">Sisa bulan ini</Text>
           <Text className="mt-1 font-bold text-base text-white">
-            {formatCurrency(data.cashflow.balance_month_to_date)}
+            {hideBalance ? 'Rp••••••••' : formatCurrency(data.cashflow.balance_month_to_date)}
           </Text>
         </View>
         <View className="flex-1 rounded-2xl bg-white/15 p-3">
@@ -312,7 +312,7 @@ export default function Home() {
               </View>
             </Card>
           ) : todaySummary.data ? (
-            <TodaySummaryCard data={todaySummary.data} />
+            <TodaySummaryCard data={todaySummary.data} hideBalance={hideBalance} />
           ) : null}
         </Section>
 

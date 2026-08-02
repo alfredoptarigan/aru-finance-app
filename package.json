@@ -1,5 +1,5 @@
 {
-  "name": "aru-finance-app",
+  "name": "ledgeria",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
