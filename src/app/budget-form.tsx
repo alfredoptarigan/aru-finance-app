@@ -35,30 +35,30 @@ interface DraftBucket {
 const defaultRows: DraftBucket[] = [
   {
     key: 'operational',
-    name: 'Operasional',
-    description: 'Belanja, Kesehatan, Lainnya, Transportasi',
+    name: 'Essentials',
+    description: 'Shopping, health, transport, and other essentials',
     icon: 'cart-outline',
-    color: '#6366F1',
+    color: '#B65F47',
     percent: '50',
-    categories: ['Belanja', 'Kesehatan', 'Lainnya', 'Transportasi'],
+    categories: ['Shopping', 'Health', 'Transport', 'Other'],
   },
   {
     key: 'fun',
-    name: 'Jajan',
-    description: 'Makanan dan Hiburan',
+    name: 'Flexible',
+    description: 'Food and entertainment',
     icon: 'fast-food-outline',
-    color: '#F97316',
+    color: '#A66F2C',
     percent: '10',
-    categories: ['Makanan', 'Hiburan'],
+    categories: ['Food', 'Entertainment'],
   },
   {
     key: 'investing',
-    name: 'Nabung/Investasi',
-    description: 'Kategori Investasi',
+    name: 'Savings / investing',
+    description: 'Long-term savings and investments',
     icon: 'trending-up-outline',
-    color: '#22C55E',
+    color: '#4F745E',
     percent: '40',
-    categories: ['Investasi'],
+    categories: ['Investing'],
   },
 ];
 
@@ -74,7 +74,7 @@ function parseMonth(key: string) {
 
 function monthLabel(key: string): string {
   const [y, m] = key.split('-').map(Number);
-  return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(
     new Date(y, m - 1, 1),
   );
 }
@@ -130,6 +130,8 @@ export default function BudgetForm() {
   useEffect(() => {
     const b = budgets.data?.find((x) => x.id === params.id);
     if (b) {
+      // Query data arrives after the modal mounts; hydrate the editable draft once available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDigits(String(Math.round(b.limit_amount)));
       setCategoryId(b.category_id);
     }
@@ -137,6 +139,8 @@ export default function BudgetForm() {
 
   useEffect(() => {
     if (!isManualEdit && plan.data) {
+      // Query data arrives after the modal mounts; hydrate the editable draft once available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSource(plan.data.source ?? 'manual');
       setAvailableDigits(String(Math.round(plan.data.available_amount)));
       setNotes(plan.data.notes ?? '');
@@ -181,8 +185,8 @@ export default function BudgetForm() {
 
   const submitManual = () => {
     const amount = Number(digits || 0);
-    if (amount <= 0) return setError('Nominal harus lebih dari 0');
-    if (!categoryId) return setError('Pilih kategori dulu');
+    if (amount <= 0) return setError('Amount must be greater than 0');
+    if (!categoryId) return setError('Choose a category');
     setError('');
     manualMutation.mutate(
       { category_id: categoryId, limit_amount: amount, month: monthNumber, year },
@@ -191,8 +195,8 @@ export default function BudgetForm() {
   };
 
   const submitPlan = () => {
-    if (availableAmount <= 0) return setError('Uang tersedia harus lebih dari 0');
-    if (totalPercent !== 100) return setError('Total persentase harus 100%');
+    if (availableAmount <= 0) return setError('Available amount must be greater than 0');
+    if (totalPercent !== 100) return setError('Total allocation must equal 100%');
     const buckets: BudgetPlanBucketInput[] = rows.map((row) => ({
       bucket_key: row.key,
       percent: Number(row.percent || 0),
@@ -214,10 +218,10 @@ export default function BudgetForm() {
   };
 
   const confirmDelete = () =>
-    Alert.alert('Hapus budget?', 'Budget kategori ini akan dihapus.', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert('Delete budget?', 'This category budget will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Hapus',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => deleteBudget.mutate(params.id!, { onSuccess: () => router.back() }),
       },
@@ -227,10 +231,10 @@ export default function BudgetForm() {
     return (
       <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
         <View className="flex-row items-center justify-between px-5 py-4">
-          <Text className="font-bold text-xl text-ink dark:text-ink-dark">Edit Budget Manual</Text>
+          <Text className="font-bold text-xl text-ink dark:text-ink-dark">Edit manual budget</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tutup form budget"
+            accessibilityLabel="Close budget form"
             onPress={() => router.back()}
             hitSlop={8}
           >
@@ -239,10 +243,10 @@ export default function BudgetForm() {
         </View>
         <ScrollView contentContainerClassName="gap-5 px-5 pb-8" keyboardShouldPersistTaps="handled">
           <View className="items-center gap-1 py-2">
-            <Text className="text-xs text-muted dark:text-muted-dark">Budget per bulan</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">Monthly budget</Text>
             <TextInput
-              accessibilityLabel="Budget manual per bulan"
-              className="font-extrabold text-5xl text-ink dark:text-ink-dark"
+              accessibilityLabel="Manual monthly budget"
+              className="font-extrabold tabular-nums text-5xl text-ink dark:text-ink-dark"
               keyboardType="number-pad"
               placeholder="Rp0"
               placeholderTextColor={colors.muted}
@@ -256,8 +260,8 @@ export default function BudgetForm() {
           {manualMutation.error ? (
             <Text className="text-sm text-error dark:text-error-dark">{manualMutation.error.message}</Text>
           ) : null}
-          <Button title="Simpan Perubahan" variant="gradient" loading={manualMutation.isPending} onPress={submitManual} />
-          <Button title="Hapus Budget" variant="ghost" loading={deleteBudget.isPending} onPress={confirmDelete} />
+          <Button title="Save changes" loading={manualMutation.isPending} onPress={submitManual} />
+          <Button title="Delete budget" variant="quiet" loading={deleteBudget.isPending} onPress={confirmDelete} />
         </ScrollView>
       </SafeAreaView>
     );
@@ -272,7 +276,7 @@ export default function BudgetForm() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Tutup form budget"
+          accessibilityLabel="Close budget form"
           onPress={() => router.back()}
           hitSlop={8}
         >
@@ -281,38 +285,38 @@ export default function BudgetForm() {
       </View>
 
       <ScrollView contentContainerClassName="gap-5 px-5 pb-8" keyboardShouldPersistTaps="handled">
-        <View className="gap-4 rounded-[32px] border border-line bg-card p-5 shadow-sm shadow-black/5 dark:border-line-dark dark:bg-card-dark">
+        <View className="gap-4 border-y border-line py-5 dark:border-line-dark">
           <View className="flex-row items-center gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary-dark/15">
               <Ionicons name="wallet-outline" size={22} color={colors.primary} />
             </View>
             <View className="flex-1">
-              <Text className="font-semibold text-base text-ink dark:text-ink-dark">Sumber budget</Text>
-              <Text className="text-xs text-muted dark:text-muted-dark">Snapshot saldo atau nominal manual</Text>
+              <Text className="font-semibold text-base text-ink dark:text-ink-dark">Budget source</Text>
+              <Text className="text-xs text-muted dark:text-muted-dark">Balance snapshot or a manual amount</Text>
             </View>
           </View>
 
           <View className="flex-row gap-2">
-            <SourceButton active={source === 'balance_snapshot'} title="Sisa saldo" onPress={useSnapshotBalance} />
+            <SourceButton active={source === 'balance_snapshot'} title="Available balance" onPress={useSnapshotBalance} />
             <SourceButton active={source === 'manual'} title="Manual" onPress={useManualAmount} />
           </View>
 
           {source === 'balance_snapshot' ? (
-            <View className="rounded-3xl bg-bg p-4 dark:bg-bg-dark">
-              <Text className="text-xs text-muted dark:text-muted-dark">Sisa saldo sekarang</Text>
-              <Text className="mt-1 font-extrabold text-3xl text-ink dark:text-ink-dark">
-                {availableBalance.data ? formatCurrency(availableBalance.data.available_balance) : 'Memuat...'}
+            <View className="rounded-xl bg-bg p-4 dark:bg-bg-dark">
+              <Text className="text-xs text-muted dark:text-muted-dark">Available now</Text>
+              <Text className="mt-1 font-extrabold tabular-nums text-3xl text-ink dark:text-ink-dark">
+                {availableBalance.data ? formatCurrency(availableBalance.data.available_balance) : 'Loading…'}
               </Text>
               <Text className="mt-2 text-xs text-muted dark:text-muted-dark">
-                Income baru tidak otomatis mengubah plan. Refresh manual kalau perlu.
+                New income does not change the plan automatically. Refresh it when needed.
               </Text>
             </View>
           ) : (
             <View>
-              <Text className="mb-2 font-medium text-sm text-muted dark:text-muted-dark">Nominal bulan ini</Text>
+              <Text className="mb-2 font-medium text-sm text-muted dark:text-muted-dark">Amount this month</Text>
               <TextInput
-                accessibilityLabel="Nominal bulan ini"
-                className="min-h-16 rounded-3xl bg-bg px-4 font-extrabold text-4xl text-ink dark:bg-bg-dark dark:text-ink-dark"
+                accessibilityLabel="Amount this month"
+                className="min-h-16 rounded-xl bg-bg px-4 font-extrabold tabular-nums text-4xl text-ink dark:bg-bg-dark dark:text-ink-dark"
                 keyboardType="number-pad"
                 placeholder="Rp0"
                 placeholderTextColor={colors.muted}
@@ -324,11 +328,11 @@ export default function BudgetForm() {
           )}
 
           <View>
-            <Text className="mb-2 font-medium text-sm text-muted dark:text-muted-dark">Catatan</Text>
+            <Text className="mb-2 font-medium text-sm text-muted dark:text-muted-dark">Notes</Text>
             <TextInput
-              accessibilityLabel="Catatan budget"
-              className="min-h-12 rounded-3xl bg-bg px-4 py-3 text-base text-ink dark:bg-bg-dark dark:text-ink-dark"
-              placeholder="Contoh: gaji setelah cicilan"
+              accessibilityLabel="Budget notes"
+              className="min-h-12 rounded-xl bg-bg px-4 py-3 text-base text-ink dark:bg-bg-dark dark:text-ink-dark"
+              placeholder="For example, salary after repayments"
               placeholderTextColor={colors.muted}
               value={notes}
               onChangeText={setNotes}
@@ -338,15 +342,15 @@ export default function BudgetForm() {
 
         <View>
           <View className="mb-2 flex-row items-center justify-between">
-            <Text className="font-semibold text-base text-ink dark:text-ink-dark">Template cepat</Text>
-            <Text className="text-xs text-muted dark:text-muted-dark">Target total 100%</Text>
+            <Text className="font-semibold text-base text-ink dark:text-ink-dark">Quick template</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">Target total: 100%</Text>
           </View>
           <View className="flex-row gap-2">
           <TemplateButton title="50/30/20" onPress={() => applyTemplate('balanced')} />
           <TemplateButton title="50/10/40" onPress={() => applyTemplate('saving')} />
           <View className="ml-auto rounded-2xl bg-card px-3 py-2 dark:bg-card-dark">
             <Text
-              className={`font-bold text-sm ${totalPercent === 100 ? 'text-secondary dark:text-secondary-dark' : 'text-error dark:text-error-dark'}`}
+              className={`font-bold tabular-nums text-sm ${totalPercent === 100 ? 'text-secondary dark:text-secondary-dark' : 'text-error dark:text-error-dark'}`}
             >
               {totalPercent}%
             </Text>
@@ -356,25 +360,25 @@ export default function BudgetForm() {
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between">
-            <Text className="font-semibold text-base text-ink dark:text-ink-dark">Pembagian budget</Text>
-            <Text className="text-xs text-muted dark:text-muted-dark">Kategori otomatis</Text>
+            <Text className="font-semibold text-base text-ink dark:text-ink-dark">Allocation</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">Automatic categories</Text>
           </View>
           {rows.map((row) => {
             const percent = Number(row.percent || 0);
             const planned = availableAmount > 0 ? Math.round((availableAmount * percent) / 100) : 0;
             return (
-              <View key={row.key} className="rounded-[28px] border border-line bg-card p-4 shadow-sm shadow-black/5 dark:border-line-dark dark:bg-card-dark">
+              <View key={row.key} className="border-b border-line py-4 dark:border-line-dark">
                 <View className="flex-row items-center gap-3">
                   <View className="h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: `${row.color}22` }}>
                     <Ionicons name={budgetIconName(row.icon)} size={22} color={row.color} />
                   </View>
                   <View className="flex-1">
                     <Text className="font-semibold text-base text-ink dark:text-ink-dark">{row.name}</Text>
-                    <Text className="text-xs text-muted dark:text-muted-dark">{formatCurrency(planned)}</Text>
+                    <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">{formatCurrency(planned)}</Text>
                   </View>
                   <TextInput
-                    accessibilityLabel={`Persentase ${row.name}`}
-                    className="h-11 w-16 rounded-2xl bg-bg px-3 text-center font-bold text-ink dark:bg-bg-dark dark:text-ink-dark"
+                    accessibilityLabel={`${row.name} percentage`}
+                    className="h-11 w-16 rounded-xl bg-bg px-3 text-center font-bold tabular-nums text-ink dark:bg-bg-dark dark:text-ink-dark"
                     keyboardType="number-pad"
                     value={row.percent}
                     onChangeText={(v) => updateRow(row.key, { percent: digitsOnly(v).slice(0, 3) })}
@@ -383,7 +387,7 @@ export default function BudgetForm() {
                 <Text className="mt-3 text-xs text-muted dark:text-muted-dark">{row.description}</Text>
                 <View className="mt-3 flex-row flex-wrap gap-2">
                   {row.categories.map((category) => (
-                    <View key={category} className="rounded-full bg-bg px-3 py-1.5 dark:bg-bg-dark">
+                    <View key={category} className="rounded-md bg-bg px-3 py-1.5 dark:bg-bg-dark">
                       <Text className="text-xs text-muted dark:text-muted-dark">{category}</Text>
                     </View>
                   ))}
@@ -398,8 +402,7 @@ export default function BudgetForm() {
           <Text className="text-sm text-error dark:text-error-dark">{planMutation.error.message}</Text>
         ) : null}
         <Button
-          title={plan.data ? 'Simpan Budget Plan' : 'Buat Budget Plan'}
-          variant="gradient"
+          title={plan.data ? 'Save budget plan' : 'Create budget plan'}
           loading={planMutation.isPending}
           onPress={submitPlan}
           disabled={!canSubmitPlan || planMutation.isPending}
@@ -415,7 +418,7 @@ function SourceButton({ active, title, onPress }: { active: boolean; title: stri
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       onPress={onPress}
-      className={`flex-1 items-center rounded-2xl px-3 py-3 ${active ? 'bg-primary dark:bg-primary-dark' : 'bg-bg dark:bg-bg-dark'}`}
+      className={`min-h-12 flex-1 items-center rounded-xl px-3 py-3 ${active ? 'bg-primary dark:bg-primary-dark' : 'bg-bg dark:bg-bg-dark'}`}
     >
       <Text className={`font-semibold text-sm ${active ? 'text-white' : 'text-ink dark:text-ink-dark'}`}>{title}</Text>
     </Pressable>
@@ -426,9 +429,9 @@ function TemplateButton({ title, onPress }: { title: string; onPress: () => void
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Pakai template ${title}`}
+      accessibilityLabel={`Use ${title} template`}
       onPress={onPress}
-      className="rounded-2xl border border-line bg-card px-3 py-2 dark:border-line-dark dark:bg-card-dark"
+      className="rounded-xl border border-line bg-card px-3 py-2 dark:border-line-dark dark:bg-card-dark"
     >
       <Text className="font-semibold text-sm text-ink dark:text-ink-dark">{title}</Text>
     </Pressable>
@@ -446,16 +449,16 @@ function CategoryPicker({
 }) {
   return (
     <View className="gap-2">
-      <Text className="font-medium text-sm text-ink dark:text-ink-dark">Kategori</Text>
+      <Text className="font-medium text-sm text-ink dark:text-ink-dark">Category</Text>
       <View className="flex-row flex-wrap gap-3">
         {(categories ?? []).map((c) => (
           <Pressable
             key={c.id}
             accessibilityRole="button"
-            accessibilityLabel={`Pilih kategori ${c.name}`}
+            accessibilityLabel={`Choose ${c.name} category`}
             accessibilityState={{ selected: value === c.id }}
             onPress={() => onChange(c.id)}
-            className={`w-[22%] items-center gap-1.5 rounded-2xl border-2 py-3 ${
+            className={`min-h-16 w-[22%] items-center gap-1.5 rounded-xl border-2 py-3 ${
               value === c.id
                 ? 'border-primary bg-primary/5 dark:border-primary-dark dark:bg-primary-dark/10'
                 : 'border-transparent'

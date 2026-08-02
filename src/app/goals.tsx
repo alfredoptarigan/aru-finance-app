@@ -1,12 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { MotiView } from 'moti';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Card } from '@/components/ui/Card';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useGoals } from '@/features/goals/hooks';
 import { formatCurrency, formatDate, formatPercentage } from '@/lib/currency';
@@ -36,7 +36,7 @@ function ProgressRing({ progress, size = 64 }: { progress: number; size?: number
           strokeDashoffset={c * (1 - clamped)}
         />
       </Svg>
-      <Text className="absolute font-bold text-xs text-ink dark:text-ink-dark">
+      <Text className="absolute font-bold tabular-nums text-xs text-ink dark:text-ink-dark">
         {formatPercentage(clamped * 100)}
       </Text>
     </View>
@@ -51,7 +51,7 @@ function monthlySuggestion(goal: Goal): string | null {
     Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / (30 * 86400_000)),
     1,
   );
-  return `Nabung ${formatCurrency(Math.ceil(remaining / monthsLeft))}/bulan untuk mencapai target`;
+  return `Save ${formatCurrency(Math.ceil(remaining / monthsLeft))} per month to reach this goal`;
 }
 
 export default function Goals() {
@@ -61,19 +61,13 @@ export default function Goals() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg-dark">
-      <View className="flex-row items-center justify-between px-5 py-4">
-        <View className="flex-row items-center gap-3">
-          <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </Pressable>
-          <Text className="font-bold text-xl text-ink dark:text-ink-dark">Target Tabungan</Text>
-        </View>
-        <Pressable
-          onPress={() => router.push('/goal-form')}
-          className="h-10 w-10 items-center justify-center rounded-2xl bg-primary dark:bg-primary-dark active:opacity-80"
-        >
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
+      <View className="px-5 py-4">
+        <ScreenHeader
+          title="Savings goals"
+          subtitle="Progress against the numbers that matter later."
+          back
+          action={{ icon: 'add', label: 'Add savings goal', onPress: () => router.push('/goal-form') }}
+        />
       </View>
 
       <ScrollView
@@ -95,8 +89,8 @@ export default function Goals() {
           <Card>
             <EmptyState
               icon="flag-outline"
-              title="Belum ada target"
-              subtitle="Buat target tabungan pertamamu — mulai dari yang kecil juga oke!"
+              title="No savings goals yet"
+              subtitle="Start with one clear target, even if it is small."
             />
           </Card>
         ) : (
@@ -117,22 +111,14 @@ export default function Goals() {
                       <Text className="font-semibold text-base text-ink dark:text-ink-dark">
                         {g.title}
                       </Text>
-                      {done && (
-                        <MotiView
-                          from={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: 'spring', damping: 8 }}
-                        >
-                          <Text className="text-base">🎉</Text>
-                        </MotiView>
-                      )}
+                      {done ? <AppIcon name="success" size={18} color={colors.secondary} /> : null}
                     </View>
-                    <Text className="text-xs text-muted dark:text-muted-dark">
-                      {formatCurrency(g.current_amount)} dari {formatCurrency(g.target_amount)}
+                    <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">
+                      {formatCurrency(g.current_amount)} of {formatCurrency(g.target_amount)}
                       {g.deadline ? ` · ${formatDate(g.deadline)}` : ''}
                     </Text>
-                    <Text className="text-xs text-primary dark:text-primary-dark">
-                      {done ? 'Target tercapai — keren banget! 🚀' : suggestion ?? 'Terus konsisten ya! 💪'}
+                    <Text className="tabular-nums text-xs text-primary dark:text-primary-dark">
+                      {done ? 'Goal reached' : suggestion ?? 'Keep contributing when you can'}
                     </Text>
                   </View>
                 </Card>

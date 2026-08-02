@@ -14,10 +14,11 @@ export function TransactionItem({ transaction: t, onPress }: TransactionItemProp
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 rounded-3xl bg-card p-3.5 active:opacity-70 dark:bg-card-dark"
+      accessibilityRole="button"
+      className="min-h-16 flex-row items-center gap-3 border-b border-line px-1 py-3 active:opacity-70 dark:border-line-dark"
     >
       <CategoryIcon category={t.category} />
-      <View className="flex-1">
+      <View className="min-w-0 flex-1">
         <Text numberOfLines={1} className="font-semibold text-base text-ink dark:text-ink-dark">
           {t.title}
         </Text>

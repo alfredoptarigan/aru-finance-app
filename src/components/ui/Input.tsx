@@ -21,7 +21,7 @@ export function Input({ label, icon, error, secure = false, ...props }: InputPro
         <Text className="font-medium text-sm text-ink dark:text-ink-dark">{label}</Text>
       ) : null}
       <View
-        className={`h-14 flex-row items-center gap-2.5 rounded-2xl border bg-card px-4 dark:bg-card-dark ${
+        className={`min-h-14 flex-row items-center gap-2.5 rounded-xl border bg-card px-4 dark:bg-card-dark ${
           error ? 'border-error dark:border-error-dark' : 'border-line dark:border-line-dark'
         }`}
       >
@@ -33,7 +33,7 @@ export function Input({ label, icon, error, secure = false, ...props }: InputPro
           {...props}
         />
         {secure ? (
-          <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={hidden ? 'Show password' : 'Hide password'} onPress={() => setHidden((h) => !h)} hitSlop={12}>
             <Ionicons
               name={hidden ? 'eye-off-outline' : 'eye-outline'}
               size={20}

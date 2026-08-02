@@ -1,47 +1,51 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { router, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 import Animated, {
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 
-import { gradients } from '@/constants/colors';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useThemeColors } from '@/stores/theme';
 
 function AddButton() {
+  const colors = useThemeColors();
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const spring = { damping: 18, stiffness: 240, reduceMotion: ReduceMotion.System } as const;
 
   return (
     <Pressable
-      onPressIn={() => (scale.value = withSpring(0.88))}
-      onPressOut={() => (scale.value = withSpring(1))}
-      onPress={() => router.push('/transaction-form')}
+      accessibilityRole="button"
+      accessibilityLabel="Add transaction"
+      onPressIn={() => scale.set(withSpring(0.9, spring))}
+      onPressOut={() => scale.set(withSpring(1, spring))}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        router.push('/transaction-form');
+      }}
       style={{ flex: 1, alignItems: 'center' }}
     >
-      <Animated.View style={[{ marginTop: -26 }, style]}>
-        <LinearGradient
-          colors={gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
+      <Animated.View
+        style={[
+          {
+            marginTop: -18,
+            width: 56,
+            height: 56,
+            borderRadius: 18,
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: '#6366F1',
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 8,
-          }}
-        >
-          <Ionicons name="add" size={32} color="#fff" />
-        </LinearGradient>
+            backgroundColor: colors.primary,
+            borderWidth: 5,
+            borderColor: colors.bg,
+          },
+          style,
+        ]}
+      >
+        <AppIcon name="add" size={26} color="#fff" />
       </Animated.View>
     </Pressable>
   );
@@ -59,26 +63,25 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
+          height: 68,
+          paddingTop: 7,
+          paddingBottom: 7,
         },
-        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: 'Outfit_500Medium', fontSize: 11 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <AppIcon name="home" size={23} color={color} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          title: 'Transaksi',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'list' : 'list-outline'} size={24} color={color} />
-          ),
+          title: 'Transactions',
+          tabBarIcon: ({ color }) => <AppIcon name="transactions" size={23} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -90,9 +93,7 @@ export default function TabsLayout() {
         name="budgets"
         options={{
           title: 'Budget',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'pie-chart' : 'pie-chart-outline'} size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <AppIcon name="budget" size={23} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -104,10 +105,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
-          ),
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <AppIcon name="profile" size={23} color={color} />,
         }}
       />
     </Tabs>

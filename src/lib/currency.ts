@@ -10,7 +10,7 @@ export function formatDate(
   opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' },
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('id-ID', opts).format(d);
+  return new Intl.DateTimeFormat('en-US', opts).format(d);
 }
 
 export function formatPercentage(value: number, showSign = false): string {

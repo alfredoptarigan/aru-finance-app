@@ -36,7 +36,7 @@ export function AmountText({
 }: AmountTextProps) {
   const prefix = signed ? (tone === 'income' ? '+' : tone === 'expense' ? '-' : '') : '';
   return (
-    <Text className={`${sizeClass[size]} ${toneClass[tone]} ${className}`}>
+    <Text style={{ fontVariant: ['tabular-nums'] }} className={`${sizeClass[size]} ${toneClass[tone]} ${className}`}>
       {prefix}
       {formatCurrency(Math.abs(amount))}
     </Text>

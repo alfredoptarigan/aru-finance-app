@@ -1,46 +1,35 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { MotiView } from 'moti';
-import { useRef, useState } from 'react';
-import { Dimensions, FlatList, Pressable, Text, View, type ViewToken } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { FlatList, Pressable, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PixelMark } from '@/components/PixelMark';
 import { Button } from '@/components/ui/Button';
-import { gradients } from '@/constants/colors';
 import { useAuthStore } from '@/stores/auth';
-
-const { width } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    icon: 'wallet-outline',
-    gradient: gradients.primary,
-    title: 'Track Your Money Effortlessly',
-    subtitle: 'Catat pemasukan dan pengeluaran harianmu dengan cepat.',
+    title: 'Know where every rupiah goes.',
+    subtitle: 'Record income and spending in a ledger built for quick daily use.',
   },
   {
-    icon: 'pie-chart-outline',
-    gradient: gradients.expense,
-    title: 'Understand Your Spending',
-    subtitle: 'Lihat kategori pengeluaran terbesar dan kebiasaan finansialmu.',
+    title: 'Read the pattern, not the noise.',
+    subtitle: 'See useful spending trends and the categories shaping your month.',
   },
   {
-    icon: 'flag-outline',
-    gradient: gradients.saving,
-    title: 'Set Budgets & Goals',
-    subtitle: 'Buat budget bulanan dan target tabungan agar keuangan lebih terarah.',
+    title: 'Give tomorrow a number.',
+    subtitle: 'Plan budgets, savings goals, and bills without losing the daily picture.',
   },
   {
-    icon: 'notifications-outline',
-    gradient: gradients.income,
-    title: 'Stay in Control',
-    subtitle: 'Dapatkan insight, alert budget, dan ringkasan cashflow.',
+    title: 'Stay ahead of the month.',
+    subtitle: 'Get clear warnings when a budget or upcoming bill needs attention.',
   },
 ] as const;
 
 export default function Onboarding() {
   const [page, setPage] = useState(0);
+  const { width } = useWindowDimensions();
   const listRef = useRef<FlatList>(null);
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
   const isLast = page === SLIDES.length - 1;
@@ -50,16 +39,16 @@ export default function Onboarding() {
     router.replace('/');
   };
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems[0]?.index != null) setPage(viewableItems[0].index);
-  }).current;
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg-dark">
       <View className="h-12 flex-row items-center justify-end px-6">
         {!isLast && (
           <Pressable onPress={finish} hitSlop={8}>
-            <Text className="font-medium text-sm text-muted dark:text-muted-dark">Lewati</Text>
+            <Text className="font-medium text-sm text-muted dark:text-muted-dark">Skip</Text>
           </Pressable>
         )}
       </View>
@@ -74,37 +63,27 @@ export default function Onboarding() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         renderItem={({ item, index }) => (
-          <View style={{ width }} className="items-center justify-center gap-8 px-8">
-            <MotiView
+          <View style={{ width }} className="justify-center px-8">
+            <Animated.View
               key={`${index}-${page === index}`}
-              from={{ opacity: 0, scale: 0.85, translateY: 12 }}
-              animate={{ opacity: 1, scale: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 450 }}
-              className="items-center gap-8"
+              entering={FadeInDown.duration(350).reduceMotion(ReduceMotion.System)}
+              className="items-start"
             >
-              <LinearGradient
-                colors={item.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 180,
-                  height: 180,
-                  borderRadius: 56,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name={item.icon} size={80} color="#fff" />
-              </LinearGradient>
-              <View className="gap-3">
-                <Text className="text-center font-extrabold text-3xl text-ink dark:text-ink-dark">
+              <View className="mb-12 -ml-8 w-52 items-end rounded-r-2xl border border-l-0 border-line bg-card py-3 pr-5 dark:border-line-dark dark:bg-card-dark">
+                <PixelMark size={156} />
+              </View>
+              <Text className="mb-3 font-medium text-xs tracking-[2px] text-primary dark:text-primary-dark">
+                ENTRY {String(index + 1).padStart(2, '0')}
+              </Text>
+              <View className="max-w-80 gap-4">
+                <Text className="font-extrabold text-4xl leading-[43px] text-ink dark:text-ink-dark">
                   {item.title}
                 </Text>
-                <Text className="text-center text-base leading-6 text-muted dark:text-muted-dark">
+                <Text className="text-base leading-6 text-muted dark:text-muted-dark">
                   {item.subtitle}
                 </Text>
               </View>
-            </MotiView>
+            </Animated.View>
           </View>
         )}
       />
@@ -112,17 +91,15 @@ export default function Onboarding() {
       <View className="gap-8 px-8 pb-6">
         <View className="flex-row justify-center gap-2">
           {SLIDES.map((_, i) => (
-            <MotiView
+            <View
               key={i}
-              animate={{ width: i === page ? 24 : 8, opacity: i === page ? 1 : 0.35 }}
-              transition={{ type: 'timing', duration: 250 }}
-              className="h-2 rounded-full bg-primary dark:bg-primary-dark"
+              style={{ width: i === page ? 24 : 8, opacity: i === page ? 1 : 0.35 }}
+              className="h-1 rounded-full bg-primary dark:bg-primary-dark"
             />
           ))}
         </View>
         <Button
-          title={isLast ? 'Get Started' : 'Lanjut'}
-          variant="gradient"
+          title={isLast ? 'Open your ledger' : 'Continue'}
           onPress={() =>
             isLast
               ? void finish()

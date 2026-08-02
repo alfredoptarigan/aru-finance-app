@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -14,8 +13,11 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionItem } from '@/components/TransactionItem';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
   useCategories,
@@ -27,15 +29,15 @@ import { useThemeColors } from '@/stores/theme';
 import type { Transaction } from '@/types';
 
 const TYPE_FILTERS = [
-  { label: 'Semua', value: undefined },
-  { label: 'Pemasukan', value: 'income' },
-  { label: 'Pengeluaran', value: 'expense' },
+  { label: 'All', value: undefined },
+  { label: 'Income', value: 'income' },
+  { label: 'Expense', value: 'expense' },
 ] as const;
 
 const DATE_FILTERS = [
-  { label: 'Semua waktu', from: undefined },
-  { label: 'Bulan ini', from: 'month' },
-  { label: '30 hari', from: '30d' },
+  { label: 'Any time', from: undefined },
+  { label: 'This month', from: 'month' },
+  { label: 'Last 30 days', from: '30d' },
 ] as const;
 
 function dateRange(preset?: string): { start_date?: string; end_date?: string } {
@@ -63,7 +65,9 @@ function Chip({
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-full border px-3.5 py-2 active:opacity-70 ${
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      className={`min-h-10 justify-center rounded-lg border px-3.5 py-2 active:opacity-70 ${
         active
           ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
           : 'border-line bg-card dark:border-line-dark dark:bg-card-dark'
@@ -85,9 +89,9 @@ function SwipeableRow({ transaction }: { transaction: Transaction }) {
   const deleteTx = useDeleteTransaction();
 
   const confirmDelete = () =>
-    Alert.alert('Hapus transaksi?', `"${transaction.title}" akan dihapus permanen.`, [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Hapus', style: 'destructive', onPress: () => deleteTx.mutate(transaction.id) },
+    Alert.alert('Delete transaction?', `"${transaction.title}" will be permanently deleted.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteTx.mutate(transaction.id) },
     ]);
 
   return (
@@ -96,16 +100,20 @@ function SwipeableRow({ transaction }: { transaction: Transaction }) {
       renderRightActions={() => (
         <View className="flex-row items-center gap-2 pl-2">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${transaction.title}`}
             onPress={() => router.push(`/transaction-form?id=${transaction.id}`)}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 dark:bg-primary-dark/20"
+            className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15 dark:bg-primary-dark/20"
           >
-            <Ionicons name="pencil" size={18} color={colors.primary} />
+            <AppIcon name="edit" size={18} color={colors.primary} />
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${transaction.title}`}
             onPress={confirmDelete}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-error/15 dark:bg-error-dark/20"
+            className="h-11 w-11 items-center justify-center rounded-xl bg-error/15 dark:bg-error-dark/20"
           >
-            <Ionicons name="trash" size={18} color={colors.error} />
+            <AppIcon name="delete" size={18} color={colors.error} />
           </Pressable>
         </View>
       )}
@@ -142,9 +150,9 @@ export default function Transactions() {
   const list = useTransactions(filters);
   const categories = useCategories();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
-  const categoryLabel = categories.data?.find((c) => c.id === categoryId)?.name ?? 'Semua kategori';
-  const typeLabel = TYPE_FILTERS.find((f) => f.value === type)?.label ?? 'Semua';
-  const dateLabel = DATE_FILTERS.find((f) => f.from === datePreset)?.label ?? 'Semua waktu';
+  const categoryLabel = categories.data?.find((c) => c.id === categoryId)?.name ?? 'All categories';
+  const typeLabel = TYPE_FILTERS.find((f) => f.value === type)?.label ?? 'All';
+  const dateLabel = DATE_FILTERS.find((f) => f.from === datePreset)?.label ?? 'Any time';
   const hasFilters = !!type || !!categoryId || !!datePreset;
   const resetFilters = () => {
     setType(undefined);
@@ -155,36 +163,49 @@ export default function Transactions() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <View className="gap-3 px-5 pb-3 pt-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Transaksi</Text>
+        <View className="flex-row items-start gap-3">
+          <View className="min-w-0 flex-1">
+            <ScreenHeader title="Transactions" subtitle="Search, filter, or swipe an entry to edit it." />
+          </View>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={filtersOpen ? 'Hide filters' : 'Show filters'}
+            accessibilityState={{ expanded: filtersOpen }}
             onPress={() => setFiltersOpen((open) => !open)}
-            className={`h-11 w-11 items-center justify-center rounded-2xl active:opacity-70 ${
+            className={`h-11 w-11 shrink-0 items-center justify-center rounded-xl active:opacity-70 ${
               filtersOpen || hasFilters
                 ? 'bg-primary dark:bg-primary-dark'
                 : 'bg-card dark:bg-card-dark'
             }`}
           >
-            <Ionicons
-              name="options-outline"
-              size={22}
-              color={filtersOpen || hasFilters ? '#fff' : colors.muted}
-            />
+            <AppIcon name="filter" size={22} color={filtersOpen || hasFilters ? '#fff' : colors.muted} />
           </Pressable>
         </View>
-        <Input
-          icon="search-outline"
-          placeholder="Cari transaksi…"
-          value={search}
-          onChangeText={setSearch}
-        />
+        <View className="flex-row items-center gap-2">
+          <View className="min-w-0 flex-1">
+            <Input
+              icon="search-outline"
+              placeholder="Search transactions"
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Scan receipt"
+            onPress={() => router.push('/receipt-scanner')}
+            className="h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ink active:scale-[0.98] dark:bg-card-dark"
+          >
+            <AppIcon name="scan" size={23} color="#fff" />
+          </Pressable>
+        </View>
         <Text className="text-xs text-muted dark:text-muted-dark">
           {typeLabel} · {categoryLabel} · {dateLabel}
         </Text>
         {filtersOpen ? (
-          <View className="gap-4 rounded-3xl bg-card p-4 dark:bg-card-dark">
+          <View className="gap-4 border-y border-line py-4 dark:border-line-dark">
             <View className="gap-2">
-              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Jenis</Text>
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Type</Text>
               <View className="flex-row flex-wrap gap-2">
                 {TYPE_FILTERS.map((f) => (
                   <Chip
@@ -197,7 +218,7 @@ export default function Transactions() {
               </View>
             </View>
             <View className="gap-2">
-              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Kategori</Text>
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Category</Text>
               <FlatList
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -207,7 +228,7 @@ export default function Transactions() {
                 renderItem={({ item: c }) =>
                   c === undefined ? (
                     <Chip
-                      label="Semua kategori"
+                      label="All categories"
                       active={!categoryId}
                       onPress={() => setCategoryId(undefined)}
                     />
@@ -222,7 +243,7 @@ export default function Transactions() {
               />
             </View>
             <View className="gap-2">
-              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Waktu</Text>
+              <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Date</Text>
               <View className="flex-row flex-wrap gap-2">
                 {DATE_FILTERS.map((f) => (
                   <Chip
@@ -237,7 +258,7 @@ export default function Transactions() {
             {hasFilters ? (
               <Pressable onPress={resetFilters} className="self-start active:opacity-70">
                 <Text className="font-semibold text-xs text-error dark:text-error-dark">
-                  Reset filter
+                  Reset filters
                 </Text>
               </Pressable>
             ) : null}
@@ -245,7 +266,16 @@ export default function Transactions() {
         ) : null}
       </View>
 
-      {list.isPending ? (
+      {list.isError ? (
+        <View className="px-5">
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Transactions could not load"
+            subtitle="Check your connection and try again."
+          />
+          <Button title="Try again" variant="quiet" onPress={() => void list.refetch()} />
+        </View>
+      ) : list.isPending ? (
         <View className="gap-2.5 px-5">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-18 w-full" />
@@ -255,7 +285,7 @@ export default function Transactions() {
         <FlatList
           data={items}
           keyExtractor={(t) => t.id}
-          contentContainerClassName="gap-2.5 px-5 pb-8"
+          contentContainerClassName="px-5 pb-8"
           renderItem={({ item }) => <SwipeableRow transaction={item} />}
           refreshControl={
             <RefreshControl
@@ -271,8 +301,8 @@ export default function Transactions() {
           ListEmptyComponent={
             <EmptyState
               icon="receipt-outline"
-              title="Tidak ada transaksi"
-              subtitle="Coba ubah filter atau catat transaksi baru."
+              title="No transactions found"
+              subtitle="Change the filters or add a new transaction."
             />
           }
           ListFooterComponent={

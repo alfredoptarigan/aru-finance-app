@@ -11,14 +11,14 @@ import { useRegister } from '@/features/auth/hooks';
 
 const schema = z
   .object({
-    full_name: z.string().min(2, 'Nama minimal 2 karakter'),
-    email: z.string().email('Email tidak valid'),
-    password: z.string().min(6, 'Password minimal 6 karakter'),
+    full_name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Enter a valid email'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
     confirm: z.string(),
   })
   .refine((v) => v.password === v.confirm, {
     path: ['confirm'],
-    message: 'Password tidak sama',
+    message: 'Passwords do not match',
   });
 
 type FormValues = z.infer<typeof schema>;
@@ -37,10 +37,10 @@ export default function Register() {
 
   return (
     <AuthScaffold
-      title="Buat akun dan mulai atur uangmu."
-      subtitle="Mulai kelola keuanganmu hari ini"
-      footerQuestion="Sudah punya akun?"
-      footerAction="Masuk"
+      title="Start a calmer ledger."
+      subtitle="Create an account and put every rupiah in its place."
+      footerQuestion="Already have an account?"
+      footerAction="Sign in"
       footerHref="/(auth)/login"
     >
       <Controller
@@ -48,9 +48,9 @@ export default function Register() {
         name="full_name"
         render={({ field: { onChange, value } }) => (
           <Input
-            label="Nama"
+            label="Name"
             icon="person-outline"
-            placeholder="Nama kamu"
+            placeholder="Your name"
             value={value}
             onChangeText={onChange}
             error={errors.full_name?.message}
@@ -64,7 +64,7 @@ export default function Register() {
           <Input
             label="Email"
             icon="mail-outline"
-            placeholder="kamu@email.com"
+            placeholder="you@example.com"
             autoCapitalize="none"
             keyboardType="email-address"
             value={value}
@@ -80,7 +80,7 @@ export default function Register() {
           <Input
             label="Password"
             icon="lock-closed-outline"
-            placeholder="Minimal 6 karakter"
+            placeholder="At least 6 characters"
             secure
             value={value}
             onChangeText={onChange}
@@ -93,9 +93,9 @@ export default function Register() {
         name="confirm"
         render={({ field: { onChange, value } }) => (
           <Input
-            label="Konfirmasi Password"
+            label="Confirm password"
             icon="lock-closed-outline"
-            placeholder="Ulangi password"
+            placeholder="Repeat password"
             secure
             value={value}
             onChangeText={onChange}
@@ -108,7 +108,7 @@ export default function Register() {
         <Text className="text-sm text-error dark:text-error-dark">{register.error.message}</Text>
       ) : null}
 
-      <Button title="Daftar" variant="gradient" loading={register.isPending} onPress={onSubmit} />
+      <Button title="Create account" loading={register.isPending} onPress={onSubmit} />
     </AuthScaffold>
   );
 }

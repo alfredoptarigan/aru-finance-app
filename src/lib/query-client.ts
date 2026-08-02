@@ -20,7 +20,8 @@ export const qk = {
     ['transactions', 'list', filters] as const,
   transaction: (id: string) => ['transactions', 'detail', id] as const,
   categories: ['categories'] as const,
-  paymentMethods: ['payment-methods'] as const,
+  wallets: ['payment-methods'] as const,
+  wallet: (id: string) => ['payment-methods', id] as const,
   budgets: (month: number, year: number) => ['budgets', year, month] as const,
   budgetPlan: (month: number, year: number) => ['budget-plans', year, month] as const,
   budgetPlanAvailableBalance: (month: number, year: number) =>

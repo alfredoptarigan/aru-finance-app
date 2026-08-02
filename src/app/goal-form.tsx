@@ -25,7 +25,7 @@ function AmountField({
     <View className="gap-1.5">
       <Text className="font-medium text-sm text-ink dark:text-ink-dark">{label}</Text>
       <TextInput
-        className="h-14 rounded-2xl border border-line bg-card px-4 font-semibold text-lg text-ink dark:border-line-dark dark:bg-card-dark dark:text-ink-dark"
+        className="h-14 rounded-xl border border-line bg-card px-4 font-semibold tabular-nums text-lg text-ink dark:border-line-dark dark:bg-card-dark dark:text-ink-dark"
         keyboardType="number-pad"
         placeholder="Rp0"
         placeholderTextColor={colors.muted}
@@ -58,6 +58,8 @@ export default function GoalForm() {
   useEffect(() => {
     const g = goals.data?.find((x) => x.id === params.id);
     if (g) {
+      // Query data arrives after the modal mounts; hydrate the editable draft once available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(g.title);
       setTargetDigits(String(Math.round(g.target_amount)));
       setCurrentDigits(String(Math.round(g.current_amount)));
@@ -66,9 +68,9 @@ export default function GoalForm() {
   }, [goals.data, params.id]);
 
   const submit = () => {
-    if (!title.trim()) return setError('Nama target wajib diisi');
+    if (!title.trim()) return setError('Goal name is required');
     const target = Number(targetDigits || 0);
-    if (target <= 0) return setError('Target harus lebih dari 0');
+    if (target <= 0) return setError('Target amount must be greater than 0');
     setError('');
     mutation.mutate(
       {
@@ -82,10 +84,10 @@ export default function GoalForm() {
   };
 
   const confirmDelete = () =>
-    Alert.alert('Hapus target?', 'Target tabungan ini akan dihapus.', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert('Delete goal?', 'This savings goal will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Hapus',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => deleteGoal.mutate(params.id!, { onSuccess: () => router.back() }),
       },
@@ -95,7 +97,7 @@ export default function GoalForm() {
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg dark:bg-bg-dark">
       <View className="flex-row items-center justify-between px-5 py-4">
         <Text className="font-bold text-xl text-ink dark:text-ink-dark">
-          {isEdit ? 'Edit Target' : 'Target Baru'}
+          {isEdit ? 'Edit goal' : 'New goal'}
         </Text>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={26} color={colors.muted} />
@@ -104,22 +106,22 @@ export default function GoalForm() {
 
       <ScrollView contentContainerClassName="gap-4 px-5 pb-8" keyboardShouldPersistTaps="handled">
         <Input
-          label="Nama Target"
+          label="Goal name"
           icon="flag-outline"
-          placeholder="Contoh: Dana darurat"
+          placeholder="For example, emergency fund"
           value={title}
           onChangeText={setTitle}
         />
-        <AmountField label="Target Nominal" digits={targetDigits} onChange={setTargetDigits} />
+        <AmountField label="Target amount" digits={targetDigits} onChange={setTargetDigits} />
         <AmountField
-          label="Terkumpul Saat Ini"
+          label="Saved so far"
           digits={currentDigits}
           onChange={setCurrentDigits}
         />
 
         <View className="gap-1.5">
           <Text className="font-medium text-sm text-ink dark:text-ink-dark">
-            Deadline (opsional)
+            Deadline (optional)
           </Text>
           <Pressable
             onPress={() => setShowDate(true)}
@@ -127,7 +129,7 @@ export default function GoalForm() {
           >
             <Ionicons name="calendar-outline" size={20} color={colors.muted} />
             <Text className="text-base text-ink dark:text-ink-dark">
-              {deadline ? formatDate(deadline) : 'Pilih tanggal'}
+              {deadline ? formatDate(deadline) : 'Choose a date'}
             </Text>
           </Pressable>
           {showDate && (
@@ -149,15 +151,14 @@ export default function GoalForm() {
         ) : null}
 
         <Button
-          title={isEdit ? 'Simpan Perubahan' : 'Simpan Target'}
-          variant="gradient"
+          title={isEdit ? 'Save changes' : 'Save goal'}
           loading={mutation.isPending}
           onPress={submit}
         />
         {isEdit && (
           <Button
-            title="Hapus Target"
-            variant="ghost"
+            title="Delete goal"
+            variant="quiet"
             loading={deleteGoal.isPending}
             onPress={confirmDelete}
           />

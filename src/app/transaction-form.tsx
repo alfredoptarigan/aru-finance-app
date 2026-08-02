@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { MotiView } from 'moti';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,15 +13,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { ReduceMotion, ZoomIn } from 'react-native-reanimated';
 import { z } from 'zod';
 
 import { CategoryIcon } from '@/components/CategoryIcon';
+import { WalletPicker } from '@/components/WalletPicker';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
   useCategories,
   useCreateTransaction,
-  usePaymentMethods,
   useTransaction,
   useUpdateTransaction,
 } from '@/features/transactions/hooks';
@@ -32,12 +33,12 @@ import type { TransactionType } from '@/types';
 
 const schema = z.object({
   type: z.enum(['income', 'expense']),
-  amount: z.number().positive('Nominal harus lebih dari 0'),
-  title: z.string().min(1, 'Judul wajib diisi'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  category_id: z.string().min(1, 'Pilih kategori dulu'),
+  category_id: z.string().min(1, 'Choose a category'),
   transaction_date: z.string(),
-  payment_method_id: z.string().nullable().optional(),
+  payment_method_id: z.string().min(1, 'Choose a wallet'),
 });
 
 export default function TransactionForm() {
@@ -59,7 +60,6 @@ export default function TransactionForm() {
   const [done, setDone] = useState(false);
 
   const categories = useCategories();
-  const paymentMethods = usePaymentMethods();
   const existing = useTransaction(params.id ?? '');
   const create = useCreateTransaction();
   const update = useUpdateTransaction(params.id ?? '');
@@ -68,6 +68,8 @@ export default function TransactionForm() {
   useEffect(() => {
     const t = existing.data;
     if (!t) return;
+    // Query data arrives after the modal mounts; hydrate the editable draft once available.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setType(t.type);
     setDigits(String(Math.round(t.amount)));
     setTitle(t.title);
@@ -115,7 +117,7 @@ export default function TransactionForm() {
       >
         <View className="flex-row items-center justify-between px-5 py-4">
           <Text className="font-bold text-xl text-ink dark:text-ink-dark">
-            {isEdit ? 'Edit Transaksi' : 'Tambah Transaksi'}
+            {isEdit ? 'Edit transaction' : 'New transaction'}
           </Text>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.muted} />
@@ -145,17 +147,35 @@ export default function TransactionForm() {
                     type === t ? 'text-white' : 'text-muted dark:text-muted-dark'
                   }`}
                 >
-                  {t === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                  {t === 'income' ? 'Income' : 'Expense'}
                 </Text>
               </Pressable>
             ))}
           </View>
 
+          {!isEdit ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Scan a receipt"
+              onPress={() => router.push('/receipt-scanner')}
+              className="min-h-16 flex-row items-center gap-3 rounded-xl bg-ink px-4 active:scale-[0.98] dark:bg-card-dark"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+                <AppIcon name="scan" size={21} color="#fff" />
+              </View>
+              <View className="min-w-0 flex-1">
+                <Text className="font-semibold text-sm text-white">Scan a receipt</Text>
+                <Text className="text-xs text-white/65">Extract line items from a photo or PDF.</Text>
+              </View>
+              <AppIcon name="chevronRight" size={18} color="#fff" />
+            </Pressable>
+          ) : null}
+
           {/* Amount */}
           <View className="items-center gap-1 py-2">
-            <Text className="text-xs text-muted dark:text-muted-dark">Nominal</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">Amount</Text>
             <TextInput
-              className="font-extrabold text-5xl text-ink dark:text-ink-dark"
+              className="font-extrabold tabular-nums text-5xl text-ink dark:text-ink-dark"
               keyboardType="number-pad"
               placeholder="Rp0"
               placeholderTextColor={colors.muted}
@@ -169,24 +189,24 @@ export default function TransactionForm() {
           </View>
 
           <Input
-            label="Judul"
+            label="Title"
             icon="create-outline"
-            placeholder="Contoh: Makan siang"
+            placeholder="For example, lunch"
             value={title}
             onChangeText={setTitle}
             error={errors.title}
           />
           <Input
-            label="Deskripsi (opsional)"
+            label="Description (optional)"
             icon="document-text-outline"
-            placeholder="Catatan tambahan"
+            placeholder="Add a note"
             value={description}
             onChangeText={setDescription}
           />
 
           {/* Category grid */}
           <View className="gap-2">
-            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Kategori</Text>
+            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Category</Text>
             {errors.category_id ? (
               <Text className="text-xs text-error dark:text-error-dark">{errors.category_id}</Text>
             ) : null}
@@ -195,7 +215,9 @@ export default function TransactionForm() {
                 <Pressable
                   key={c.id}
                   onPress={() => setCategoryId(c.id)}
-                  className={`w-[22%] items-center gap-1.5 rounded-2xl border-2 py-3 ${
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: categoryId === c.id }}
+                  className={`min-h-16 w-[22%] items-center gap-1.5 rounded-xl border-2 py-3 ${
                     categoryId === c.id
                       ? 'border-primary bg-primary/5 dark:border-primary-dark dark:bg-primary-dark/10'
                       : 'border-transparent'
@@ -212,7 +234,7 @@ export default function TransactionForm() {
               ))}
               {typeCategories.length === 0 && (
                 <Text className="text-sm text-muted dark:text-muted-dark">
-                  Belum ada kategori untuk tipe ini.
+                  No categories are available for this type.
                 </Text>
               )}
             </View>
@@ -220,10 +242,10 @@ export default function TransactionForm() {
 
           {/* Date */}
           <View className="gap-2">
-            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Tanggal</Text>
+            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Date</Text>
             <Pressable
               onPress={() => setShowDate(true)}
-              className="h-14 flex-row items-center gap-2.5 rounded-2xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
+              className="h-14 flex-row items-center gap-2.5 rounded-xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
             >
               <Ionicons name="calendar-outline" size={20} color={colors.muted} />
               <Text className="text-base text-ink dark:text-ink-dark">{formatDate(date)}</Text>
@@ -240,33 +262,12 @@ export default function TransactionForm() {
             )}
           </View>
 
-          {/* Payment method */}
-          <View className="gap-2">
-            <Text className="font-medium text-sm text-ink dark:text-ink-dark">
-              Metode Pembayaran
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {(paymentMethods.data ?? []).map((m) => (
-                <Pressable
-                  key={m.id}
-                  onPress={() => setPaymentMethodId(paymentMethodId === m.id ? null : m.id)}
-                  className={`rounded-full border px-3.5 py-2 ${
-                    paymentMethodId === m.id
-                      ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
-                      : 'border-line bg-card dark:border-line-dark dark:bg-card-dark'
-                  }`}
-                >
-                  <Text
-                    className={`font-medium text-xs ${
-                      paymentMethodId === m.id ? 'text-white' : 'text-muted dark:text-muted-dark'
-                    }`}
-                  >
-                    {m.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+          <WalletPicker
+            value={paymentMethodId}
+            onChange={setPaymentMethodId}
+            error={errors.payment_method_id}
+            helper={type === 'expense' ? 'This wallet will be debited.' : 'This wallet will receive the income.'}
+          />
 
           {mutation.error ? (
             <Text className="text-sm text-error dark:text-error-dark">
@@ -275,8 +276,7 @@ export default function TransactionForm() {
           ) : null}
 
           <Button
-            title={isEdit ? 'Simpan Perubahan' : 'Simpan Transaksi'}
-            variant="gradient"
+            title={isEdit ? 'Save changes' : 'Save transaction'}
             loading={mutation.isPending}
             onPress={submit}
           />
@@ -286,14 +286,12 @@ export default function TransactionForm() {
       {/* Success overlay */}
       {done && (
         <View className="absolute inset-0 items-center justify-center bg-black/40">
-          <MotiView
-            from={{ scale: 0.4, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 12 }}
-            className="h-24 w-24 items-center justify-center rounded-full bg-secondary dark:bg-secondary-dark"
+          <Animated.View
+            entering={ZoomIn.duration(260).reduceMotion(ReduceMotion.System)}
+            className="h-24 w-24 items-center justify-center rounded-2xl bg-secondary dark:bg-secondary-dark"
           >
             <Ionicons name="checkmark" size={52} color="#fff" />
-          </MotiView>
+          </Animated.View>
         </View>
       )}
     </SafeAreaView>

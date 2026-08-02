@@ -3,7 +3,7 @@ import type { ApiResponse, AvatarUploadResponse, Session } from '@/types';
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 
-const SENSITIVE_KEYS = new Set(['authorization', 'access_token', 'refresh_token', 'password']);
+const SENSITIVE_KEYS = new Set(['authorization', 'access_token', 'refresh_token', 'password', 'image']);
 
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
@@ -114,7 +114,7 @@ async function refreshSession() {
 
 async function request<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const method = init.method ?? 'GET';
-  const requestBody = parseBody(init.body);
+  const requestBody = path === '/receipts/scan' ? '[receipt payload redacted]' : parseBody(init.body);
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api${path}`, {
@@ -140,6 +140,8 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
     onUnauthorized?.();
     throw new ApiError('Sesi kamu berakhir. Silakan login kembali.', 401);
   }
+
+  if (res.status === 204 && res.ok) return undefined as T;
 
   if (!res.ok || json?.success === false) {
     const message =

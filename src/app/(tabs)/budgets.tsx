@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -9,6 +8,7 @@ import { CategoryIcon } from '@/components/CategoryIcon';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useBudgetPlan, useBudgets, useRefreshBudgetPlanBalance } from '@/features/budgets/hooks';
 import { ApiError } from '@/lib/api';
@@ -29,7 +29,7 @@ function shiftMonth(key: string, delta: number): string {
 
 function monthLabel(key: string): string {
   const [y, m] = key.split('-').map(Number);
-  return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(
     new Date(y, m - 1, 1),
   );
 }
@@ -44,11 +44,11 @@ function statusText(status: BudgetAllocationStatus) {
     case 'overbudget':
       return 'Over';
     case 'exhausted':
-      return 'Habis';
+      return 'Spent';
     case 'warning':
-      return 'Waspada';
+      return 'Watch';
     default:
-      return 'Aman';
+      return 'On track';
   }
 }
 
@@ -96,13 +96,13 @@ export default function Budgets() {
     (a) => ('bucket_key' in a ? a.bucket_key === 'investing' : a.kind !== 'expense') && a.remaining_amount > 0,
   );
   const planAlert = overBucket
-    ? `${overBucket.name} sudah over ${formatCurrency(Math.abs(overBucket.remaining_amount))}.`
+    ? `${overBucket.name} is over by ${formatCurrency(Math.abs(overBucket.remaining_amount))}.`
     : exhaustedBucket
-      ? `${exhaustedBucket.name} habis. Stop dulu di pos ini.`
+      ? `${exhaustedBucket.name} is fully spent. Pause this category for now.`
       : savingBucket
-        ? `${savingBucket.name} masih perlu ${formatCurrency(savingBucket.remaining_amount)} bulan ini.`
+        ? `${savingBucket.name} still needs ${formatCurrency(savingBucket.remaining_amount)} this month.`
         : budgetPlan
-          ? 'Rencana bulan ini masih aman.'
+          ? 'This month is still on track.'
           : null;
 
   const refresh = () => {
@@ -118,27 +118,22 @@ export default function Budgets() {
           <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.muted} />
         }
       >
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Budget Planner</Text>
-            <Text className="text-sm text-muted dark:text-muted-dark">Atur uang bulanan tanpa nebak</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={budgetPlan ? 'Edit budget plan' : 'Buat budget plan'}
-            onPress={() => router.push(`/budget-form?month=${month}${budgetPlan ? `&planId=${budgetPlan.id}` : ''}`)}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-primary dark:bg-primary-dark active:opacity-80"
-          >
-            <Ionicons name={budgetPlan ? 'create-outline' : 'add'} size={22} color="#fff" />
-          </Pressable>
-        </View>
+        <ScreenHeader
+          title="Budget"
+          subtitle="Plan the month, then watch the actual numbers."
+          action={{
+            icon: budgetPlan ? 'edit' : 'add',
+            label: budgetPlan ? 'Edit budget plan' : 'Create budget plan',
+            onPress: () => router.push(`/budget-form?month=${month}${budgetPlan ? `&planId=${budgetPlan.id}` : ''}`),
+          }}
+        />
 
         <View className="flex-row items-center justify-between rounded-2xl bg-card px-3 py-2.5 dark:bg-card-dark">
-          <Pressable accessibilityRole="button" accessibilityLabel="Bulan sebelumnya" onPress={() => setMonth(shiftMonth(month, -1))} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => setMonth(shiftMonth(month, -1))} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={colors.muted} />
           </Pressable>
           <Text className="font-semibold text-base text-ink dark:text-ink-dark">{monthLabel(month)}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Bulan berikutnya" onPress={() => setMonth(shiftMonth(month, 1))} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => setMonth(shiftMonth(month, 1))} hitSlop={8}>
             <Ionicons name="chevron-forward" size={20} color={colors.muted} />
           </Pressable>
         </View>
@@ -154,22 +149,14 @@ export default function Budgets() {
             <View className="flex-row items-center gap-3">
               <Ionicons name="cloud-offline-outline" size={22} color={colors.error} />
               <View className="flex-1">
-                <Text className="font-semibold text-base text-ink dark:text-ink-dark">Budget plan belum bisa dimuat</Text>
-                <Text className="text-sm text-muted dark:text-muted-dark">Cek koneksi atau coba refresh sebelum buat plan baru.</Text>
+                <Text className="font-semibold text-base text-ink dark:text-ink-dark">Budget plan could not load</Text>
+                <Text className="text-sm text-muted dark:text-muted-dark">Check your connection or refresh before creating a new plan.</Text>
               </View>
             </View>
           </Card>
         ) : budgetPlan ? (
           <>
-            <LinearGradient
-              colors={['#06B6D4', '#6366F1', '#8B5CF6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 32, padding: 20, overflow: 'hidden' }}
-            >
-              <View className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
-              <View className="absolute -bottom-16 left-10 h-40 w-40 rounded-full bg-white/10" />
-
+            <View className="rounded-2xl bg-primary p-5 dark:bg-primary-dark">
               <View className="flex-row items-start justify-between gap-3">
                 <View className="flex-1">
                   <View className="mb-3 flex-row items-center gap-2">
@@ -177,51 +164,51 @@ export default function Budgets() {
                       <Ionicons name="wallet-outline" size={18} color="#fff" />
                     </View>
                     <Text className="font-semibold text-sm text-white/85">
-                      {budgetPlan.source === 'balance_snapshot' ? 'Sisa saldo snapshot' : 'Uang tersedia manual'}
+                      {budgetPlan.source === 'balance_snapshot' ? 'Available balance snapshot' : 'Manual available amount'}
                     </Text>
                   </View>
-                  <Text className="font-extrabold text-4xl text-white">
+                  <Text className="font-extrabold tabular-nums text-4xl text-white">
                     {formatCurrency(budgetPlan.available_amount)}
                   </Text>
                   {budgetPlan.balance_snapshot_at && (
                     <Text className="mt-2 text-xs text-white/75">
-                      Snapshot tetap. Income baru tidak auto ubah plan.
+                      Fixed snapshot. New income does not change this plan automatically.
                     </Text>
                   )}
                 </View>
                 <View className="items-end gap-2">
                   <View className="rounded-2xl bg-white/18 px-3 py-2">
-                    <Text className="font-semibold text-xs text-white">{budgetPlan.total_percent}% teralokasi</Text>
+                    <Text className="font-semibold tabular-nums text-xs text-white">{budgetPlan.total_percent}% allocated</Text>
                   </View>
                   {budgetPlan.source === 'balance_snapshot' && (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Update dari saldo terbaru"
+                      accessibilityLabel="Update from current balance"
                       disabled={refreshBalance.isPending}
                       onPress={() => refreshBalance.mutate(budgetPlan.id)}
                       className="rounded-2xl bg-white px-3 py-2 active:opacity-80"
                     >
-                      <Text className="font-semibold text-xs text-primary">Refresh saldo</Text>
+                      <Text className="font-semibold text-xs text-primary">Refresh balance</Text>
                     </Pressable>
                   )}
                 </View>
               </View>
 
-              <View className="mt-6 flex-row gap-3">
-                <View className="flex-1 rounded-3xl bg-white/16 p-4">
-                  <Text className="text-xs text-white/75">Sisa plan</Text>
-                  <Text className="mt-1 font-bold text-xl text-white">
+              <View className="mt-6 flex-row gap-5 border-t border-white/20 pt-4">
+                <View className="flex-1">
+                  <Text className="text-xs text-white/75">Remaining</Text>
+                  <Text className="mt-1 font-bold tabular-nums text-xl text-white">
                     {formatCurrency(budgetPlan.summary.remaining_amount)}
                   </Text>
                 </View>
-                <View className="flex-1 rounded-3xl bg-white/16 p-4">
-                  <Text className="text-xs text-white/75">Aman / hari</Text>
-                  <Text className="mt-1 font-bold text-xl text-white">
+                <View className="flex-1 border-l border-white/20 pl-5">
+                  <Text className="text-xs text-white/75">Safe per day</Text>
+                  <Text className="mt-1 font-bold tabular-nums text-xl text-white">
                     {formatCurrency(budgetPlan.summary.daily_safe_to_spend)}
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
+            </View>
 
             <Card className="flex-row items-center gap-3 border border-primary/10 dark:border-primary-dark/20">
               <View className="h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary-dark/15">
@@ -238,24 +225,24 @@ export default function Budgets() {
           <Card className="gap-4">
             <EmptyState
               icon="pie-chart-outline"
-              title="Belum ada budget plan"
-              subtitle="Input uang tersedia bulan ini, lalu bagi ke operasional, jajan, ongkos, dan tabungan."
+              title="No budget plan yet"
+              subtitle="Enter this month's available money, then assign it to spending and savings."
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Buat budget plan"
+              accessibilityLabel="Create budget plan"
               onPress={() => router.push(`/budget-form?month=${month}`)}
               className="items-center rounded-2xl bg-primary px-4 py-3 dark:bg-primary-dark"
             >
-              <Text className="font-semibold text-white">Buat Budget Plan</Text>
+              <Text className="font-semibold text-white">Create budget plan</Text>
             </Pressable>
           </Card>
         ) : (
           <>
             <Card className="gap-3">
               <View className="flex-row justify-between">
-                <Text className="text-sm text-muted dark:text-muted-dark">Budget manual</Text>
-                <Text className="font-semibold text-sm text-ink dark:text-ink-dark">
+                <Text className="text-sm text-muted dark:text-muted-dark">Manual budget</Text>
+                <Text className="font-semibold tabular-nums text-sm text-ink dark:text-ink-dark">
                   {formatCurrency(totalSpent)} / {formatCurrency(totalBudget)}
                 </Text>
               </View>
@@ -263,15 +250,15 @@ export default function Budgets() {
                 progress={totalBudget > 0 ? totalSpent / totalBudget : 0}
                 color={stateColor(totalBudget > 0 ? totalSpent / totalBudget : 0)}
               />
-              <Text className="text-xs text-muted dark:text-muted-dark">
-                Sisa {formatCurrency(Math.max(totalBudget - totalSpent, 0))} bulan ini
+              <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">
+                {formatCurrency(Math.max(totalBudget - totalSpent, 0))} remaining this month
               </Text>
             </Card>
             {overCount > 0 && (
               <Card className="flex-row items-center gap-3 border border-error/30 dark:border-error-dark/30">
                 <Ionicons name="alert-circle" size={22} color={colors.error} />
                 <Text className="flex-1 text-sm text-ink dark:text-ink-dark">
-                  {overCount} kategori melebihi budget.
+                  {overCount} {overCount === 1 ? 'category is' : 'categories are'} over budget.
                 </Text>
               </Card>
             )}
@@ -281,7 +268,7 @@ export default function Budgets() {
                 <Pressable
                   key={b.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Edit budget ${b.category?.name ?? 'Kategori'}`}
+                  accessibilityLabel={`Edit ${b.category?.name ?? 'category'} budget`}
                   onPress={() => router.push(`/budget-form?id=${b.id}&month=${month}`)}
                   className="active:opacity-80"
                 >
@@ -290,14 +277,14 @@ export default function Budgets() {
                       <CategoryIcon category={b.category} size={40} />
                       <View className="flex-1">
                         <Text className="font-semibold text-base text-ink dark:text-ink-dark">
-                          {b.category?.name ?? 'Kategori'}
+                          {b.category?.name ?? 'Category'}
                         </Text>
-                        <Text className="text-xs text-muted dark:text-muted-dark">
-                          {formatCurrency(b.spent_amount)} dari {formatCurrency(b.limit_amount)}
+                        <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">
+                          {formatCurrency(b.spent_amount)} of {formatCurrency(b.limit_amount)}
                         </Text>
                       </View>
-                      <Text className="font-semibold text-xs text-muted dark:text-muted-dark">
-                        Sisa {formatCurrency(Math.max(b.limit_amount - b.spent_amount, 0))}
+                      <Text className="font-semibold tabular-nums text-xs text-muted dark:text-muted-dark">
+                        {formatCurrency(Math.max(b.limit_amount - b.spent_amount, 0))} left
                       </Text>
                     </View>
                     <ProgressBar progress={progress} color={stateColor(progress)} height={8} />
@@ -331,7 +318,7 @@ function AllocationCard({ allocation }: { allocation: BudgetPlanAllocation | Bud
               : colors.secondary;
 
   return (
-    <Card className="gap-3">
+    <View className="gap-3 border-b border-line py-4 dark:border-line-dark">
       <View className="flex-row items-center gap-3">
         <View
           className="h-12 w-12 items-center justify-center rounded-2xl"
@@ -342,12 +329,12 @@ function AllocationCard({ allocation }: { allocation: BudgetPlanAllocation | Bud
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
             <Text className="font-semibold text-base text-ink dark:text-ink-dark">{allocation.name}</Text>
-            <Text className="rounded-full bg-bg px-2 py-0.5 font-semibold text-[11px] text-muted dark:bg-bg-dark dark:text-muted-dark">
+            <Text className="rounded-md bg-bg px-2 py-0.5 font-semibold tabular-nums text-[11px] text-muted dark:bg-bg-dark dark:text-muted-dark">
               {allocation.percent}%
             </Text>
           </View>
-          <Text className="text-xs text-muted dark:text-muted-dark">
-            {formatCurrency(allocation.actual_amount)} dari {formatCurrency(allocation.planned_amount)}
+          <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">
+            {formatCurrency(allocation.actual_amount)} of {formatCurrency(allocation.planned_amount)}
           </Text>
         </View>
         <Text style={{ color }} className="font-bold text-xs">
@@ -357,17 +344,17 @@ function AllocationCard({ allocation }: { allocation: BudgetPlanAllocation | Bud
       <ProgressBar progress={progress} color={color} height={8} />
       <View className="flex-row justify-between">
         <Text className="text-xs text-muted dark:text-muted-dark">
-          {'bucket_key' in allocation && allocation.bucket_key === 'investing' ? 'Sisa target' : 'Sisa pakai'}
+          {'bucket_key' in allocation && allocation.bucket_key === 'investing' ? 'Goal remaining' : 'Available'}
         </Text>
-        <Text className="font-semibold text-xs text-ink dark:text-ink-dark">
+        <Text className="font-semibold tabular-nums text-xs text-ink dark:text-ink-dark">
           {formatCurrency(Math.max(allocation.remaining_amount, 0))}
         </Text>
       </View>
       {'category_names' in allocation && allocation.category_names.length > 0 ? (
         <Text className="text-xs text-muted dark:text-muted-dark">
-          Kategori: {allocation.category_names.join(', ')}
+          Categories: {allocation.category_names.join(', ')}
         </Text>
       ) : null}
-    </Card>
+    </View>
   );
 }

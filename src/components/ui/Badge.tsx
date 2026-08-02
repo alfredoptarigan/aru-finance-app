@@ -11,7 +11,7 @@ const tones: Record<Tone, { box: string; text: string }> = {
 export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
   const t = tones[tone];
   return (
-    <View className={`self-start rounded-full px-2.5 py-1 ${t.box}`}>
+    <View className={`self-start rounded-md px-2.5 py-1 ${t.box}`}>
       <Text className={`font-semibold text-xs ${t.text}`}>{label}</Text>
     </View>
   );

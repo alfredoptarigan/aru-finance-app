@@ -1,8 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { z } from 'zod';
 
 import { AuthScaffold } from '@/components/auth/AuthScaffold';
@@ -11,8 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { useLogin } from '@/features/auth/hooks';
 
 const schema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(8, 'Password minimal 8 karakter'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -31,10 +30,10 @@ export default function Login() {
 
   return (
     <AuthScaffold
-      title="Kelola keuanganmu lebih mudah."
-      subtitle="Selamat datang kembali"
-      footerQuestion="Belum punya akun?"
-      footerAction="Daftar sekarang"
+      title="Your money, in clear view."
+      subtitle="Welcome back. Sign in to continue your ledger."
+      footerQuestion="New to Ledgeria?"
+      footerAction="Create an account"
       footerHref="/(auth)/register"
     >
       <Controller
@@ -44,7 +43,7 @@ export default function Login() {
           <Input
             label="Email"
             icon="mail-outline"
-            placeholder="kamu@email.com"
+            placeholder="you@example.com"
             autoCapitalize="none"
             keyboardType="email-address"
             value={value}
@@ -69,23 +68,15 @@ export default function Login() {
         )}
       />
 
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
-          <View className="h-5 w-5 items-center justify-center rounded bg-primary">
-            <Ionicons name="checkmark" size={15} color="white" />
-          </View>
-          <Text className="text-sm text-ink dark:text-ink-dark">Ingat saya</Text>
-        </View>
-        <Link href="/(auth)/forgot-password" asChild>
-          <Text className="font-medium text-sm text-primary dark:text-primary-dark">Lupa password?</Text>
-        </Link>
-      </View>
+      <Link href="/(auth)/forgot-password" asChild>
+        <Text className="self-end font-medium text-sm text-primary dark:text-primary-dark">Forgot password?</Text>
+      </Link>
 
       {login.error ? (
         <Text className="text-sm text-error dark:text-error-dark">{login.error.message}</Text>
       ) : null}
 
-      <Button title="Masuk" variant="gradient" loading={login.isPending} onPress={onSubmit} />
+      <Button title="Sign in" loading={login.isPending} onPress={onSubmit} />
     </AuthScaffold>
   );
 }

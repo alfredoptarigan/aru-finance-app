@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link, router, type Href } from 'expo-router';
-import { MotiView } from 'moti';
 import { useState } from 'react';
 import { Dimensions, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,8 +14,8 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { gradients } from '@/constants/colors';
 import { useMe } from '@/features/auth/hooks';
+import { useBudgetPlan } from '@/features/budgets/hooks';
 import { useCharts, useSummary, useTodaySummary } from '@/features/dashboard/hooks';
 import { BASE_URL } from '@/lib/api';
 import { formatCurrency, formatPercentage } from '@/lib/currency';
@@ -26,11 +25,11 @@ import type { SummaryItem, SummaryItemSeverity, TodaySummary } from '@/types';
 const { width } = Dimensions.get('window');
 
 const QUICK_ACTIONS = [
-  { icon: 'arrow-down-circle', label: 'Pemasukan', href: '/transaction-form?type=income' },
-  { icon: 'arrow-up-circle', label: 'Pengeluaran', href: '/transaction-form?type=expense' },
+  { icon: 'arrow-down-circle', label: 'Income', href: '/transaction-form?type=income' },
+  { icon: 'arrow-up-circle', label: 'Expense', href: '/transaction-form?type=expense' },
   { icon: 'pie-chart', label: 'Budget', href: '/budget-form' },
   { icon: 'flag', label: 'Goal', href: '/goal-form' },
-  { icon: 'repeat', label: 'Subscription', href: '/(tabs)/subscriptions' },
+  { icon: 'repeat', label: 'Recurring', href: '/(tabs)/subscriptions' },
 ] as const;
 
 const severityStyles: Record<
@@ -62,13 +61,9 @@ const summaryRoutes: Record<SummaryItem['kind'], Href> = {
 
 function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 14 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 400, delay }}
-    >
+    <Animated.View entering={FadeInDown.duration(350).delay(delay).reduceMotion(ReduceMotion.System)}>
       {children}
-    </MotiView>
+    </Animated.View>
   );
 }
 
@@ -87,9 +82,9 @@ function SummaryItemCard({ item }: { item: SummaryItem }) {
       accessibilityState={{ disabled: !route }}
       disabled={!route}
       onPress={() => route && router.push(route)}
-      className="flex-row items-center gap-3 rounded-3xl bg-white/10 p-3 active:opacity-80"
+      className="min-h-14 flex-row items-center gap-3 border-t border-white/15 py-3 active:opacity-80"
     >
-      <View className={`h-10 w-10 items-center justify-center rounded-2xl ${style.box}`}>
+      <View className={`h-10 w-10 items-center justify-center rounded-xl ${style.box}`}>
         <Ionicons name={icon} size={20} color="white" />
       </View>
       <View className="flex-1">
@@ -101,7 +96,7 @@ function SummaryItemCard({ item }: { item: SummaryItem }) {
         </Text>
       </View>
       {item.amount !== null ? (
-        <Text className="font-bold text-xs text-white">{formatCurrency(item.amount)}</Text>
+        <Text className="font-bold tabular-nums text-xs text-white">{formatCurrency(item.amount)}</Text>
       ) : null}
     </Pressable>
   );
@@ -114,40 +109,35 @@ function TodaySummaryCard({ data, hideBalance }: { data: TodaySummary; hideBalan
   const topGoal = data.goals[0];
 
   return (
-    <LinearGradient
-      colors={gradients.saving}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ borderRadius: 30, padding: 18 }}
-    >
+    <View className="rounded-2xl bg-ink p-5 dark:bg-card-dark">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="text-sm text-white/75">Today radar</Text>
+          <Text className="text-sm text-white/70">Needs attention</Text>
           <Text className="mt-1 font-extrabold text-3xl text-white">
             {data.bills.due_today_count > 0
-              ? `${data.bills.due_today_count} tagihan hari ini`
-              : 'Hari ini aman'}
+              ? `${data.bills.due_today_count} ${data.bills.due_today_count === 1 ? 'bill' : 'bills'} due today`
+              : 'Nothing urgent today'}
           </Text>
-          <Text className="mt-2 text-xs text-white/75">
-            Minggu ini {formatCurrency(data.bills.due_this_week_total)} tagihan, savings rate{' '}
+          <Text className="mt-2 tabular-nums text-xs text-white/75">
+            This week: {formatCurrency(data.bills.due_this_week_total)} in bills · savings rate{' '}
             {formatPercentage(data.cashflow.savings_rate)}
           </Text>
         </View>
-        <View className="h-12 w-12 items-center justify-center rounded-3xl bg-white/15">
+        <View className="h-12 w-12 items-center justify-center rounded-xl bg-white/10">
           <Ionicons name="sparkles" size={24} color="#fff" />
         </View>
       </View>
 
-      <View className="mt-5 flex-row gap-3">
-        <View className="flex-1 rounded-2xl bg-white/15 p-3">
-          <Text className="text-xs text-white/70">Sisa bulan ini</Text>
-          <Text className="mt-1 font-bold text-base text-white">
+      <View className="mt-5 flex-row gap-5 border-y border-white/15 py-4">
+        <View className="flex-1">
+          <Text className="text-xs text-white/70">Month balance</Text>
+          <Text className="mt-1 font-bold tabular-nums text-base text-white">
             {hideBalance ? 'Rp••••••••' : formatCurrency(data.cashflow.balance_month_to_date)}
           </Text>
         </View>
-        <View className="flex-1 rounded-2xl bg-white/15 p-3">
-          <Text className="text-xs text-white/70">Tagihan minggu ini</Text>
-          <Text className="mt-1 font-bold text-base text-white">{data.bills.due_this_week_count}</Text>
+        <View className="flex-1 border-l border-white/15 pl-5">
+          <Text className="text-xs text-white/70">Bills this week</Text>
+          <Text className="mt-1 font-bold tabular-nums text-base text-white">{data.bills.due_this_week_count}</Text>
         </View>
       </View>
 
@@ -158,19 +148,19 @@ function TodaySummaryCard({ data, hideBalance }: { data: TodaySummary; hideBalan
           ))}
         </View>
       ) : (
-        <View className="mt-4 rounded-3xl bg-white/10 p-4">
-          <Text className="font-bold text-sm text-white">Tidak ada hal mendesak</Text>
-          <Text className="mt-1 text-xs text-white/70">Budget, bills, dan goal masih aman dilihat sekilas.</Text>
+        <View className="mt-4 border-t border-white/15 pt-4">
+          <Text className="font-bold text-sm text-white">Your ledger looks steady</Text>
+          <Text className="mt-1 text-xs text-white/70">Budgets, bills, and goals are currently on track.</Text>
         </View>
       )}
 
       {topBudget || topGoal ? (
-        <View className="mt-4 gap-3 rounded-3xl bg-white/10 p-4">
+        <View className="mt-4 gap-3 border-t border-white/15 pt-4">
           {topBudget ? (
             <View className="gap-2">
               <View className="flex-row items-center justify-between">
-                <Text className="font-semibold text-xs text-white">Budget {topBudget.category_name}</Text>
-                <Text className="font-bold text-xs text-white">{formatPercentage(topBudget.usage_percent)}</Text>
+                <Text className="font-semibold text-xs text-white">{topBudget.category_name} budget</Text>
+                <Text className="font-bold tabular-nums text-xs text-white">{formatPercentage(topBudget.usage_percent)}</Text>
               </View>
               <ProgressBar progress={topBudget.usage_percent / 100} color={colors.warning} height={6} />
             </View>
@@ -179,14 +169,14 @@ function TodaySummaryCard({ data, hideBalance }: { data: TodaySummary; hideBalan
             <View className="gap-2">
               <View className="flex-row items-center justify-between">
                 <Text className="font-semibold text-xs text-white">{topGoal.title}</Text>
-                <Text className="font-bold text-xs text-white">{formatPercentage(topGoal.progress_percent)}</Text>
+                <Text className="font-bold tabular-nums text-xs text-white">{formatPercentage(topGoal.progress_percent)}</Text>
               </View>
               <ProgressBar progress={topGoal.progress_percent / 100} color={colors.secondary} height={6} />
             </View>
           ) : null}
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -197,12 +187,19 @@ export default function Home() {
   const summary = useSummary();
   const todaySummary = useTodaySummary();
   const charts = useCharts();
+  const now = new Date();
+  const budgetPlan = useBudgetPlan(now.getMonth() + 1, now.getFullYear());
 
-  const refreshing = summary.isRefetching || todaySummary.isRefetching || charts.isRefetching;
+  const refreshing =
+    summary.isRefetching ||
+    todaySummary.isRefetching ||
+    charts.isRefetching ||
+    budgetPlan.isRefetching;
   const onRefresh = () => {
     void summary.refetch();
     void todaySummary.refetch();
     void charts.refetch();
+    void budgetPlan.refetch();
     void me.refetch();
   };
 
@@ -227,15 +224,15 @@ export default function Home() {
       >
         {/* Greeting */}
         <Section>
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-sm text-muted dark:text-muted-dark">Selamat datang,</Text>
-              <Text className="font-bold text-2xl text-ink dark:text-ink-dark">
-                Hi, {me.data?.profile.full_name?.split(' ')[0] ?? '…'} 👋
+          <View className="flex-row items-center gap-3">
+            <View className="min-w-0 flex-1">
+              <Text className="text-sm text-muted dark:text-muted-dark">Your ledger</Text>
+              <Text numberOfLines={1} className="font-bold text-2xl text-ink dark:text-ink-dark">
+                Good to see you, {me.data?.profile.full_name?.split(' ')[0] ?? '…'}
               </Text>
             </View>
             <Link href="/(tabs)/profile" asChild>
-              <Pressable>
+              <Pressable className="shrink-0" accessibilityRole="button" accessibilityLabel="Open profile">
                 <Avatar name={me.data?.profile.full_name} uri={avatarUri} />
               </Pressable>
             </Link>
@@ -247,15 +244,10 @@ export default function Home() {
           {summary.isPending ? (
             <Skeleton className="h-44 w-full rounded-3xl" />
           ) : (
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 28, padding: 22 }}
-            >
+            <View className="rounded-2xl bg-primary p-5 dark:bg-primary-dark">
               <View className="flex-row items-start justify-between gap-3">
                 <View className="flex-1">
-                  <Text className="text-sm text-white/70">Total Saldo</Text>
+                  <Text className="text-sm text-white/75">Available balance</Text>
                   {hideBalance ? (
                     <Text className="mt-1 font-extrabold text-4xl text-white">Rp••••••••</Text>
                   ) : (
@@ -264,34 +256,36 @@ export default function Home() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={hideBalance ? 'Tampilkan saldo' : 'Sembunyikan saldo'}
+                  accessibilityLabel={hideBalance ? 'Show balance' : 'Hide balance'}
                   onPress={() => setHideBalance((value) => !value)}
-                  className="h-11 w-11 items-center justify-center rounded-2xl bg-white/15 active:opacity-80"
+                  className="h-11 w-11 items-center justify-center rounded-xl bg-white/15 active:opacity-80"
                 >
                   <Ionicons name={hideBalance ? 'eye-off-outline' : 'eye-outline'} size={22} color="#fff" />
                 </Pressable>
               </View>
-              <View className="mt-5 flex-row gap-3">
-                <View className="flex-1 rounded-2xl bg-white/15 p-3">
+              <View className="mt-5 flex-row gap-5 border-t border-white/20 pt-4">
+                <View className="flex-1">
                   <View className="flex-row items-center gap-1.5">
-                    <Ionicons name="arrow-down-circle" size={16} color="#fff" />
-                    <Text className="text-xs text-white/80">Pemasukan</Text>
+                    <Text className="text-xs text-white/80">Safe to spend today</Text>
                   </View>
-                  <Text className="mt-1 font-bold text-base text-white">
-                    {hideBalance ? 'Rp••••••••' : formatCurrency(summary.data?.income ?? 0)}
+                  <Text className="mt-1 font-bold tabular-nums text-base text-white">
+                    {hideBalance
+                      ? 'Rp••••••••'
+                      : budgetPlan.data
+                        ? formatCurrency(budgetPlan.data.summary.daily_safe_to_spend)
+                        : '—'}
                   </Text>
                 </View>
-                <View className="flex-1 rounded-2xl bg-white/15 p-3">
+                <View className="flex-1 border-l border-white/20 pl-5">
                   <View className="flex-row items-center gap-1.5">
-                    <Ionicons name="arrow-up-circle" size={16} color="#fff" />
-                    <Text className="text-xs text-white/80">Pengeluaran</Text>
+                    <Text className="text-xs text-white/80">Spent this month</Text>
                   </View>
-                  <Text className="mt-1 font-bold text-base text-white">
+                  <Text className="mt-1 font-bold tabular-nums text-base text-white">
                     {hideBalance ? 'Rp••••••••' : formatCurrency(summary.data?.expense ?? 0)}
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
+            </View>
           )}
         </Section>
 
@@ -305,9 +299,9 @@ export default function Home() {
                 <Ionicons name="sparkles-outline" size={20} color={colors.primary} />
               </View>
               <View className="flex-1">
-                <Text className="font-bold text-sm text-ink dark:text-ink-dark">Today summary belum siap</Text>
+                <Text className="font-bold text-sm text-ink dark:text-ink-dark">Today summary is unavailable</Text>
                 <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-                  Backend belum mengirim `/dashboard/today-summary`.
+                  Pull to refresh and try again.
                 </Text>
               </View>
             </Card>
@@ -327,10 +321,10 @@ export default function Home() {
                   <Ionicons name="trending-up-outline" size={20} color={colors.secondary} />
                 </View>
                 <Text className="font-medium text-sm text-muted dark:text-muted-dark">
-                  Tingkat menabung bulan ini
+                  Savings rate this month
                 </Text>
               </View>
-              <Text className="font-bold text-lg text-ink dark:text-ink-dark">
+              <Text className="font-bold tabular-nums text-lg text-ink dark:text-ink-dark">
                 {formatPercentage(summary.data?.savingsRate ?? 0)}
               </Text>
             </Card>
@@ -343,6 +337,8 @@ export default function Home() {
             {QUICK_ACTIONS.map((a) => (
               <Pressable
                 key={a.label}
+                accessibilityRole="button"
+                accessibilityLabel={a.label}
                 onPress={() => router.push(a.href)}
                 className="items-center gap-1.5 active:opacity-70"
                 style={{ width: (width - 40) / 5 - 6 }}
@@ -362,11 +358,11 @@ export default function Home() {
             <Card className="gap-3">
               <View className="flex-row items-center justify-between">
                 <Text className="font-semibold text-base text-ink dark:text-ink-dark">
-                  Cashflow
+                  Cash flow
                 </Text>
                 <Link href="/insights" asChild>
                   <Text className="font-medium text-xs text-primary dark:text-primary-dark">
-                    Lihat insight →
+                    View insights →
                   </Text>
                 </Link>
               </View>
@@ -399,7 +395,7 @@ export default function Home() {
           <Section delay={360}>
             <Card className="gap-4">
               <Text className="font-semibold text-base text-ink dark:text-ink-dark">
-                Pengeluaran per Kategori
+                Spending by category
               </Text>
               {expenseByCategory.map((c) => (
                 <View key={c.category_id} className="flex-row items-center gap-3">
@@ -409,7 +405,7 @@ export default function Home() {
                       <Text className="font-medium text-sm text-ink dark:text-ink-dark">
                         {c.name}
                       </Text>
-                      <Text className="font-semibold text-sm text-ink dark:text-ink-dark">
+                      <Text className="font-semibold tabular-nums text-sm text-ink dark:text-ink-dark">
                         {formatCurrency(c.total)}
                       </Text>
                     </View>
@@ -430,11 +426,11 @@ export default function Home() {
           <View className="gap-3">
             <View className="flex-row items-center justify-between">
               <Text className="font-semibold text-base text-ink dark:text-ink-dark">
-                Transaksi Terakhir
+                Recent entries
               </Text>
               <Link href="/(tabs)/transactions" asChild>
                 <Text className="font-medium text-xs text-primary dark:text-primary-dark">
-                  Lihat semua →
+                  View all →
                 </Text>
               </Link>
             </View>
@@ -447,9 +443,10 @@ export default function Home() {
             ) : recentItems.length === 0 ? (
               <Card>
                 <EmptyState
+                  pixel
                   icon="receipt-outline"
-                  title="Belum ada transaksi"
-                  subtitle="Tekan tombol + untuk mencatat transaksi pertamamu."
+                  title="No entries yet"
+                  subtitle="Use the compose button to add your first transaction."
                 />
               </Card>
             ) : (

@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -8,14 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { gradients } from '@/constants/colors';
 import { useUpcomingBills, useUpcomingBillsSummary } from '@/features/upcoming-bills/hooks';
 import { formatCurrency, formatDate } from '@/lib/currency';
 import { useThemeColors } from '@/stores/theme';
 import type { UpcomingBill } from '@/types';
 
-const dayLabels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dateKey = (date: Date) => date.toISOString().slice(0, 10);
 const parseDate = (value: string) => {
   const [year, month, day] = value.split('-').map(Number);
@@ -53,7 +52,7 @@ function groupByDate(bills: UpcomingBill[]) {
 
 function statusLabel(status: UpcomingBill['status']) {
   if (status === 'overdue') return 'Overdue';
-  if (status === 'due_today') return 'Hari ini';
+  if (status === 'due_today') return 'Due today';
   return 'Upcoming';
 }
 
@@ -62,7 +61,7 @@ function BillRow({ bill }: { bill: UpcomingBill }) {
   const tone = bill.status === 'overdue' ? 'negative' : bill.status === 'due_today' ? 'positive' : 'neutral';
 
   return (
-    <View className="flex-row items-center gap-3 rounded-3xl bg-line/40 p-3 dark:bg-elevated-dark">
+    <View className="flex-row items-center gap-3 border-b border-line py-3 dark:border-line-dark">
       <View
         className="h-12 w-12 items-center justify-center rounded-2xl"
         style={{ backgroundColor: `${bill.color}20` }}
@@ -78,7 +77,7 @@ function BillRow({ bill }: { bill: UpcomingBill }) {
           <Text numberOfLines={1} className="flex-1 font-bold text-sm text-ink dark:text-ink-dark">
             {bill.name}
           </Text>
-          <Text className="font-extrabold text-sm text-ink dark:text-ink-dark">
+          <Text className="font-extrabold tabular-nums text-sm text-ink dark:text-ink-dark">
             {formatCurrency(bill.amount)}
           </Text>
         </View>
@@ -104,7 +103,7 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
   const endDate = dateKey(monthEnd(activeMonth));
   const bills = useUpcomingBills(startDate, endDate);
   const summary = useUpcomingBillsSummary(startDate, endDate);
-  const items = bills.data ?? [];
+  const items = useMemo(() => bills.data ?? [], [bills.data]);
   const billsByDate = useMemo(() => groupByDate(items), [items]);
   const selectedBills = billsByDate[selectedDate] ?? [];
   const selectedTotal = selectedBills.reduce((sum, bill) => sum + bill.amount, 0);
@@ -119,62 +118,44 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <ScrollView contentContainerClassName="gap-5 px-5 pb-10 pt-2">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-sm text-muted dark:text-muted-dark">Pantau jadwal</Text>
-            <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Bills Calendar</Text>
-          </View>
-          {showClose ? (
-            <Pressable
-              onPress={() => router.back()}
-              className="h-11 w-11 items-center justify-center rounded-full bg-card dark:bg-card-dark"
-            >
-              <Ionicons name="close" size={22} color={colors.text} />
-            </Pressable>
-          ) : null}
-        </View>
+        <ScreenHeader title="Bills calendar" subtitle="See what is due before it reaches your balance." back={showClose} />
 
-        <LinearGradient
-          colors={gradients.saving}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ borderRadius: 30, padding: 20 }}
-        >
+        <View className="rounded-2xl bg-ink p-5 dark:bg-card-dark">
           <View className="flex-row items-start justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-sm text-white/75">Bills Radar</Text>
-              <Text className="mt-1 font-extrabold text-4xl text-white">
+              <Text className="text-sm text-white/75">Scheduled this month</Text>
+              <Text className="mt-1 font-extrabold tabular-nums text-4xl text-white">
                 {formatCurrency(summary.data?.total_amount ?? 0)}
               </Text>
               <Text className="mt-2 text-xs text-white/75">
                 {summary.data?.nearest_due
-                  ? `Terdekat: ${summary.data.nearest_due.name}, ${formatDate(summary.data.nearest_due.due_date)}`
-                  : 'Belum ada tagihan terdekat'}
+                  ? `Next: ${summary.data.nearest_due.name}, ${formatDate(summary.data.nearest_due.due_date)}`
+                  : 'No upcoming bill'}
               </Text>
             </View>
-            <View className="rounded-3xl bg-white/15 p-3">
+            <View className="rounded-xl bg-white/10 p-3">
               <Ionicons name="calendar-outline" size={26} color="#fff" />
             </View>
           </View>
-          <View className="mt-5 flex-row gap-3">
-            <View className="flex-1 rounded-2xl bg-white/15 p-3">
-              <Text className="text-xs text-white/70">Tagihan</Text>
+          <View className="mt-5 flex-row gap-4 border-t border-white/15 pt-4">
+            <View className="flex-1">
+              <Text className="text-xs text-white/70">Bills</Text>
               <Text className="mt-1 font-bold text-lg text-white">{summary.data?.bill_count ?? 0}</Text>
             </View>
-            <View className="flex-1 rounded-2xl bg-white/15 p-3">
+            <View className="flex-1 border-l border-white/15 pl-4">
               <Text className="text-xs text-white/70">Auto-debit</Text>
-              <Text className="mt-1 font-bold text-lg text-white">
+              <Text className="mt-1 font-bold tabular-nums text-lg text-white">
                 {formatCurrency(summary.data?.auto_debit_total ?? 0)}
               </Text>
             </View>
-            <View className="flex-1 rounded-2xl bg-white/15 p-3">
+            <View className="flex-1 border-l border-white/15 pl-4">
               <Text className="text-xs text-white/70">Overdue</Text>
               <Text className="mt-1 font-bold text-lg text-white">
                 {summary.data?.overdue_count ?? 0}
               </Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         <Card className="gap-4">
           <View className="flex-row items-center justify-between">
@@ -193,7 +174,7 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
                 }}
               >
                 <Text className="mt-1 font-semibold text-xs text-primary dark:text-primary-dark">
-                  Hari ini
+                  Today
                 </Text>
               </Pressable>
             </View>
@@ -243,6 +224,9 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
                     return (
                       <Pressable
                         key={key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${formatDate(day, { month: 'long', day: 'numeric' })}, ${dayBills.length} bills`}
+                        accessibilityState={{ selected }}
                         onPress={() => setSelectedDate(key)}
                         className={`h-12 flex-1 items-center justify-center rounded-2xl border ${
                           selected
@@ -287,22 +271,22 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
           <Card>
             <EmptyState
               icon="cloud-offline-outline"
-              title="Tagihan gagal dimuat"
-              subtitle="Cek koneksi atau server API, lalu coba buka lagi."
+              title="Bills could not load"
+              subtitle="Check your connection and try again."
             />
           </Card>
         ) : items.length === 0 && !isLoading ? (
           <Card>
             <EmptyState
               icon="calendar-clear-outline"
-              title="Belum ada tagihan bulan ini"
-              subtitle="Tambah subscription supaya jadwal tagihan muncul di kalender."
+              title="No bills this month"
+              subtitle="Add a subscription to place its next bill on the calendar."
             />
             <Pressable
               onPress={() => router.push('/subscription-form')}
               className="mx-4 mb-4 h-12 items-center justify-center rounded-2xl bg-primary active:opacity-80 dark:bg-primary-dark"
             >
-              <Text className="font-bold text-white">Tambah subscription</Text>
+              <Text className="font-bold text-white">Add subscription</Text>
             </Pressable>
           </Card>
         ) : (
@@ -316,12 +300,12 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
                     year: 'numeric',
                   })}
                 </Text>
-                <Text className="text-xs text-muted dark:text-muted-dark">
-                  {selectedBills.length} tagihan • {formatCurrency(selectedTotal)}
+                <Text className="tabular-nums text-xs text-muted dark:text-muted-dark">
+                  {selectedBills.length} {selectedBills.length === 1 ? 'bill' : 'bills'} · {formatCurrency(selectedTotal)}
                 </Text>
               </View>
               <Badge
-                label={selectedDate === today ? 'Hari ini' : selectedBills.length ? 'Ada tagihan' : 'Kosong'}
+                label={selectedDate === today ? 'Today' : selectedBills.length ? 'Bills due' : 'Empty'}
                 tone={selectedDate === today || selectedBills.length ? 'positive' : 'neutral'}
               />
             </View>
@@ -332,8 +316,8 @@ export default function UpcomingBillsScreen({ showClose = true }: { showClose?: 
               <Card>
                 <EmptyState
                   icon="moon-outline"
-                  title="Tanggal ini aman"
-                  subtitle="Tidak ada tagihan jatuh tempo di tanggal pilihan."
+                  title="This date is clear"
+                  subtitle="No bills are due on the selected date."
                 />
               </Card>
             )}

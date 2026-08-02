@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { gradients } from '@/constants/colors';
 import { useDeleteSubscription, useSubscriptions, useUpdateSubscription } from '@/features/subscriptions/hooks';
 import { formatCurrency, formatDate } from '@/lib/currency';
 import { useThemeColors } from '@/stores/theme';
@@ -42,21 +41,21 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
   const busy = update.isPending || deleteSubscription.isPending;
 
   const confirmDelete = () =>
-    Alert.alert('Hapus subscription?', `"${sub.name}" akan dihapus.`, [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert('Delete subscription?', `"${sub.name}" will be deleted.`, [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Hapus',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => deleteSubscription.mutate(sub.id),
       },
     ]);
 
   return (
-    <Card className="gap-4">
+    <View className="gap-4 border-b border-line py-5 dark:border-line-dark">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1 flex-row gap-3">
           <View
-            className="h-14 w-14 items-center justify-center rounded-3xl"
+            className="h-12 w-12 items-center justify-center rounded-xl"
             style={{ backgroundColor: `${sub.color}18` }}
           >
             <Ionicons
@@ -73,7 +72,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
               >
                 {sub.name}
               </Text>
-              <View className="rounded-full bg-line px-2.5 py-1 dark:bg-elevated-dark">
+              <View className="rounded-md bg-line px-2.5 py-1 dark:bg-elevated-dark">
                 <Text className="font-semibold text-[11px] text-muted dark:text-muted-dark">
                   {due < 0 ? 'Overdue' : `Due in ${due}d`}
                 </Text>
@@ -100,7 +99,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
       </View>
 
       <View>
-        <Text className="font-extrabold text-2xl text-ink dark:text-ink-dark">
+        <Text className="font-extrabold tabular-nums text-2xl text-ink dark:text-ink-dark">
           {formatCurrency(sub.amount)}
           <Text className="font-medium text-sm text-muted dark:text-muted-dark">
             {' '}
@@ -141,12 +140,11 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
           <Text className="font-semibold text-xs text-error dark:text-error-dark">Delete</Text>
         </Pressable>
       </View>
-    </Card>
+    </View>
   );
 }
 
 export default function Subscriptions() {
-  const colors = useThemeColors();
   const subscriptions = useSubscriptions();
   const items = subscriptions.data ?? [];
   const active = items.filter((s) => s.is_active);
@@ -160,51 +158,39 @@ export default function Subscriptions() {
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <ScrollView contentContainerClassName="gap-5 px-5 pb-28 pt-2">
         <Section>
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-sm text-muted dark:text-muted-dark">Recurring payments</Text>
-              <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Subscription</Text>
-            </View>
-            <Pressable
-              onPress={() => router.push('/upcoming-bills')}
-              className="h-11 w-11 items-center justify-center rounded-full bg-card active:opacity-80 dark:bg-card-dark"
-            >
-              <Ionicons name="calendar-outline" size={21} color={colors.primary} />
-            </Pressable>
-          </View>
+          <ScreenHeader
+            title="Subscriptions"
+            subtitle="Recurring payments and their next billing dates."
+            action={{ icon: 'calendar', label: 'Open bills calendar', onPress: () => router.push('/upcoming-bills') }}
+          />
         </Section>
 
         <Section delay={70}>
-          <LinearGradient
-            colors={gradients.saving}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ borderRadius: 28, padding: 22 }}
-          >
+          <View className="rounded-2xl bg-ink p-5 dark:bg-card-dark">
             <View className="flex-row items-start justify-between">
               <View>
                 <Text className="text-sm text-white/75">Monthly burn</Text>
-                <Text className="mt-1 font-extrabold text-4xl text-white">
+                <Text className="mt-1 font-extrabold tabular-nums text-4xl text-white">
                   {formatCurrency(monthlyTotal)}
                 </Text>
               </View>
-              <View className="rounded-2xl bg-white/15 p-3">
+              <View className="rounded-xl bg-white/10 p-3">
                 <Ionicons name="notifications-outline" size={24} color="#fff" />
               </View>
             </View>
             <View className="mt-5 flex-row gap-3">
-              <View className="flex-1 rounded-2xl bg-white/15 p-3">
+              <View className="flex-1 border-t border-white/20 pt-3">
                 <Text className="text-xs text-white/75">Active</Text>
                 <Text className="mt-1 font-bold text-lg text-white">{active.length} services</Text>
               </View>
-              <View className="flex-1 rounded-2xl bg-white/15 p-3">
+              <View className="flex-1 border-t border-white/20 pt-3">
                 <Text className="text-xs text-white/75">Nearest due</Text>
                 <Text className="mt-1 font-bold text-lg text-white">
                   {nearestDue === null ? '-' : `${nearestDue} days`}
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </Section>
 
         <Section delay={140}>
@@ -222,8 +208,8 @@ export default function Subscriptions() {
           <Card>
             <EmptyState
               icon="cloud-offline-outline"
-              title="Subscription gagal dimuat"
-              subtitle="Tarik untuk mencoba lagi atau cek koneksi server."
+              title="Subscriptions could not load"
+              subtitle="Pull to retry or check your connection."
             />
           </Card>
         ) : subscriptions.isPending ? (
@@ -237,8 +223,8 @@ export default function Subscriptions() {
             <Card>
               <EmptyState
                 icon="repeat-outline"
-                title="Belum ada subscription"
-                subtitle="Tambah layanan yang berulang supaya tagihan tidak kelewat."
+                title="No subscriptions yet"
+                subtitle="Add a recurring service so its next bill stays visible."
               />
             </Card>
           </Section>
@@ -252,30 +238,12 @@ export default function Subscriptions() {
       </ScrollView>
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add subscription"
         onPress={() => router.push('/subscription-form')}
-        className="absolute bottom-8 right-5 h-16 w-16 items-center justify-center rounded-full active:opacity-80"
-        style={{
-          shadowColor: '#6366F1',
-          shadowOpacity: 0.35,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 8,
-        }}
+        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-2xl bg-primary active:scale-95 dark:bg-primary-dark"
       >
-        <LinearGradient
-          colors={gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            height: 64,
-            width: 64,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 32,
-          }}
-        >
-          <Ionicons name="add" size={34} color="#fff" />
-        </LinearGradient>
+        <Ionicons name="add" size={30} color="#fff" />
       </Pressable>
     </SafeAreaView>
   );

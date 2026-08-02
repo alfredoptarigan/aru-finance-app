@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -6,15 +7,15 @@ import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
-import { Card } from '@/components/ui/Card';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useLogout, useMe, useUploadAvatar } from '@/features/auth/hooks';
 import { BASE_URL } from '@/lib/api';
 import { useThemeColors, useThemeStore, type ThemeMode } from '@/stores/theme';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'light', label: 'Terang', icon: 'sunny-outline' },
-  { value: 'dark', label: 'Gelap', icon: 'moon-outline' },
-  { value: 'system', label: 'Sistem', icon: 'phone-portrait-outline' },
+  { value: 'light', label: 'Light', icon: 'sunny-outline' },
+  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+  { value: 'system', label: 'System', icon: 'phone-portrait-outline' },
 ];
 
 const AVATAR_MIME_EXT: Record<string, string> = {
@@ -42,9 +43,10 @@ function MenuRow({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      className="flex-row items-center gap-3 py-3.5 active:opacity-70"
+      accessibilityRole={onPress ? 'button' : undefined}
+      className="min-h-14 flex-row items-center gap-3 border-b border-line py-3 active:opacity-70 dark:border-line-dark"
     >
-      <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary-dark/15">
+      <View className="h-9 w-9 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary-dark/15">
         <Ionicons name={icon} size={18} color={colors.primary} />
       </View>
       <Text className="flex-1 font-medium text-sm text-ink dark:text-ink-dark">{label}</Text>
@@ -80,7 +82,7 @@ export default function Profile() {
     if (uploadAvatar.isPending) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Izin dibutuhkan', 'Akses galeri dibutuhkan untuk upload foto profil.');
+      Alert.alert('Permission needed', 'Photo library access is needed to upload a profile photo.');
       return;
     }
 
@@ -96,11 +98,11 @@ export default function Profile() {
     const mimeType = asset.mimeType ?? 'image/jpeg';
     const extension = AVATAR_MIME_EXT[mimeType];
     if (!extension) {
-      Alert.alert('Format tidak didukung', 'Pilih gambar JPG, PNG, atau WebP.');
+      Alert.alert('Unsupported format', 'Choose a JPG, PNG, or WebP image.');
       return;
     }
     if (asset.fileSize && asset.fileSize > MAX_AVATAR_BYTES) {
-      Alert.alert('File terlalu besar', 'Ukuran avatar maksimal 2MB.');
+      Alert.alert('File too large', 'Profile photos can be up to 2 MB.');
       return;
     }
 
@@ -114,21 +116,21 @@ export default function Profile() {
   };
 
   const confirmLogout = () =>
-    Alert.alert('Keluar?', 'Kamu harus login lagi untuk mengakses akunmu.', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: () => logout.mutate() },
+    Alert.alert('Sign out?', 'You will need to sign in again to access your account.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => logout.mutate() },
     ]);
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-bg dark:bg-bg-dark">
       <ScrollView contentContainerClassName="gap-4 px-5 pb-8 pt-2">
-        <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Profil</Text>
+        <ScreenHeader title="Profile" subtitle="Account, appearance, and preferences." />
 
         {/* User card */}
-        <Card className="flex-row items-center gap-4">
+        <View className="flex-row items-center gap-4 border-y border-line py-5 dark:border-line-dark">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={uploadAvatar.isPending ? 'Mengupload foto profil' : 'Upload foto profil'}
+            accessibilityLabel={uploadAvatar.isPending ? 'Uploading profile photo' : 'Upload profile photo'}
             accessibilityState={{ busy: uploadAvatar.isPending, disabled: uploadAvatar.isPending }}
             disabled={uploadAvatar.isPending}
             onPress={pickAvatar}
@@ -138,39 +140,44 @@ export default function Profile() {
               <Ionicons name={uploadAvatar.isPending ? 'hourglass-outline' : 'camera'} size={14} color="#fff" />
             </View>
           </Pressable>
-          <View className="flex-1">
-            <Text className="font-bold text-lg text-ink dark:text-ink-dark">
+          <View className="min-w-0 flex-1">
+            <Text numberOfLines={1} className="font-bold text-lg text-ink dark:text-ink-dark">
               {me.data?.profile.full_name ?? '…'}
             </Text>
-            <Text className="text-sm text-muted dark:text-muted-dark">
+            <Text numberOfLines={1} className="text-sm text-muted dark:text-muted-dark">
               {me.data?.user.email ?? ''}
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ganti foto profil"
+              accessibilityLabel="Change profile photo"
               accessibilityState={{ busy: uploadAvatar.isPending, disabled: uploadAvatar.isPending }}
               onPress={pickAvatar}
               disabled={uploadAvatar.isPending}
             >
               <Text className="mt-1 font-semibold text-xs text-primary dark:text-primary-dark">
-                {uploadAvatar.isPending ? 'Mengupload...' : 'Ganti foto profil'}
+                {uploadAvatar.isPending ? 'Uploading…' : 'Change profile photo'}
               </Text>
             </Pressable>
             {uploadAvatar.error ? (
               <Text className="mt-1 text-xs text-error dark:text-error-dark">{uploadAvatar.error.message}</Text>
             ) : null}
           </View>
-        </Card>
+        </View>
 
         {/* Theme */}
-        <Card className="gap-3">
-          <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Tema</Text>
+        <View className="gap-3">
+          <Text className="font-semibold text-sm text-ink dark:text-ink-dark">Appearance</Text>
           <View className="flex-row gap-2">
             {THEME_OPTIONS.map((t) => (
               <Pressable
                 key={t.value}
-                onPress={() => setMode(t.value)}
-                className={`flex-1 items-center gap-1.5 rounded-2xl border py-3 ${
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === t.value }}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setMode(t.value);
+                }}
+                className={`min-h-14 flex-1 items-center gap-1.5 rounded-xl border py-3 ${
                   mode === t.value
                     ? 'border-primary bg-primary/5 dark:border-primary-dark dark:bg-primary-dark/10'
                     : 'border-line dark:border-line-dark'
@@ -193,16 +200,17 @@ export default function Profile() {
               </Pressable>
             ))}
           </View>
-        </Card>
+        </View>
 
         {/* Menu */}
-        <Card>
-          <MenuRow icon="flag-outline" label="Target Tabungan" onPress={() => router.push('/goals')} />
+        <View className="border-t border-line dark:border-line-dark">
+          <MenuRow icon="wallet-outline" label="Wallets" onPress={() => router.push('/wallets')} />
+          <MenuRow icon="flag-outline" label="Savings goals" onPress={() => router.push('/goals')} />
           <MenuRow icon="bulb-outline" label="Insights" onPress={() => router.push('/insights')} />
-          <MenuRow icon="cash-outline" label="Mata Uang" value="IDR (Rp)" />
+          <MenuRow icon="cash-outline" label="Currency" value="IDR (Rp)" />
           <MenuRow
             icon="notifications-outline"
-            label="Notifikasi"
+            label="Notifications"
             right={
               <Switch
                 value={notifications}
@@ -213,16 +221,17 @@ export default function Profile() {
           />
           <MenuRow
             icon="download-outline"
-            label="Export Data"
-            onPress={() => Alert.alert('Segera hadir', 'Fitur export data sedang disiapkan.')}
+            label="Export data"
+            onPress={() => Alert.alert('Coming later', 'Data export is not available yet.')}
           />
-        </Card>
+        </View>
 
         <Pressable
           onPress={confirmLogout}
-          className="h-14 items-center justify-center rounded-2xl border border-error/40 active:opacity-70 dark:border-error-dark/40"
+          accessibilityRole="button"
+          className="h-14 items-center justify-center rounded-xl border border-error/40 active:opacity-70 dark:border-error-dark/40"
         >
-          <Text className="font-semibold text-base text-error dark:text-error-dark">Keluar</Text>
+          <Text className="font-semibold text-base text-error dark:text-error-dark">Sign out</Text>
         </Pressable>
 
         <Text className="text-center text-xs text-muted dark:text-muted-dark">

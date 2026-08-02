@@ -1,13 +1,13 @@
 import '../global.css';
 
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+  Outfit_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/outfit';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,11 +26,11 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
   });
   const status = useAuthStore((s) => s.status);
   const onboarded = useAuthStore((s) => s.onboarded);
@@ -76,7 +76,10 @@ export default function RootLayout() {
             <Stack.Screen name="goals" />
             <Stack.Screen name="insights" />
             <Stack.Screen name="upcoming-bills" />
+            <Stack.Screen name="wallets" />
+            <Stack.Screen name="receipt-scanner" options={{ presentation: 'modal' }} />
             <Stack.Screen name="transaction-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="goal-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="subscription-form" options={{ presentation: 'modal' }} />

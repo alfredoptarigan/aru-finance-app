@@ -2,7 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api';
 import { qk, queryClient } from '@/lib/query-client';
-import type { Category, Paginated, PaymentMethod, Transaction } from '@/types';
+import type { Category, Paginated, Transaction } from '@/types';
 
 export interface TransactionFilters {
   search?: string;
@@ -49,14 +49,6 @@ export function useCategories() {
   });
 }
 
-export function usePaymentMethods() {
-  return useQuery({
-    queryKey: qk.paymentMethods,
-    queryFn: () => api.get<PaymentMethod[]>('/payment-methods'),
-    staleTime: 5 * 60_000,
-  });
-}
-
 export interface TransactionInput {
   type: 'income' | 'expense';
   amount: number;
@@ -64,11 +56,12 @@ export interface TransactionInput {
   description?: string;
   category_id: string;
   transaction_date: string;
-  payment_method_id?: string | null;
+  payment_method_id: string;
 }
 
-function invalidateMoneyData() {
+export function invalidateMoneyData() {
   void queryClient.invalidateQueries({ queryKey: qk.transactions });
+  void queryClient.invalidateQueries({ queryKey: qk.wallets });
   void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   void queryClient.invalidateQueries({ queryKey: ['budgets'] });
   void queryClient.invalidateQueries({ queryKey: qk.insights });
@@ -77,6 +70,23 @@ function invalidateMoneyData() {
 export function useCreateTransaction() {
   return useMutation({
     mutationFn: (body: TransactionInput) => api.post<Transaction>('/transactions', body),
+    onSuccess: invalidateMoneyData,
+  });
+}
+
+export function useCreateTransactions() {
+  return useMutation({
+    mutationFn: async (items: TransactionInput[]) => {
+      const results = await Promise.allSettled(
+        items.map((body) => api.post<Transaction>('/transactions', body)),
+      );
+      return {
+        created: results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : [])),
+        failedIndices: results.flatMap((result, index) =>
+          result.status === 'rejected' ? [index] : [],
+        ),
+      };
+    },
     onSuccess: invalidateMoneyData,
   });
 }

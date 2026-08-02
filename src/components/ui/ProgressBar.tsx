@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { useThemeColors } from '@/stores/theme';
 
@@ -15,7 +15,10 @@ export function ProgressBar({ progress, color, height = 10 }: ProgressBarProps) 
   const width = useSharedValue(0);
 
   useEffect(() => {
-    width.value = withTiming(Math.min(Math.max(progress, 0), 1), { duration: 600 });
+    width.value = withTiming(Math.min(Math.max(progress, 0), 1), {
+      duration: 450,
+      reduceMotion: ReduceMotion.System,
+    });
   }, [progress, width]);
 
   const animatedStyle = useAnimatedStyle(() => ({ width: `${width.value * 100}%` }));

@@ -37,6 +37,14 @@
       ],
       "expo-secure-store",
       "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ledgeria uses your photos to scan receipts.",
+          "cameraPermission": "Ledgeria uses your camera to scan receipts.",
+          "microphonePermission": false
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

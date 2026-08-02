@@ -29,12 +29,12 @@ import { useThemeColors } from '@/stores/theme';
 import type { SubscriptionBillingCycle } from '@/types';
 
 const schema = z.object({
-  name: z.string().min(1, 'Nama layanan wajib diisi'),
+  name: z.string().min(1, 'Service name is required'),
   description: z.string().optional(),
-  amount: z.number().positive('Nominal harus lebih dari 0'),
+  amount: z.number().positive('Amount must be greater than 0'),
   billing_cycle: z.enum(['weekly', 'monthly', 'yearly']),
   next_billing_date: z.string(),
-  category: z.string().min(1, 'Kategori wajib diisi'),
+  category: z.string().min(1, 'Category is required'),
   payment_method_id: z.string().nullable().optional(),
   auto_debit: z.boolean(),
   is_active: z.boolean(),
@@ -71,6 +71,8 @@ export default function SubscriptionForm() {
   useEffect(() => {
     const sub = subscriptions.data?.find((item) => item.id === params.id);
     if (!sub) return;
+    // Query data arrives after the modal mounts; hydrate the editable draft once available.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(sub.name);
     setDescription(sub.description ?? '');
     setDigits(String(Math.round(sub.amount)));
@@ -111,10 +113,10 @@ export default function SubscriptionForm() {
   };
 
   const confirmDelete = () =>
-    Alert.alert('Hapus subscription?', 'Subscription ini akan dihapus.', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert('Delete subscription?', 'This subscription will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Hapus',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => deleteSubscription.mutate(params.id!, { onSuccess: () => router.back() }),
       },
@@ -128,7 +130,7 @@ export default function SubscriptionForm() {
       >
         <View className="flex-row items-center justify-between px-5 py-4">
           <Text className="font-bold text-xl text-ink dark:text-ink-dark">
-            {isEdit ? 'Edit Subscription' : 'Tambah Subscription'}
+            {isEdit ? 'Edit subscription' : 'New subscription'}
           </Text>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.muted} />
@@ -137,9 +139,9 @@ export default function SubscriptionForm() {
 
         <ScrollView contentContainerClassName="gap-5 px-5 pb-8" keyboardShouldPersistTaps="handled">
           <View className="items-center gap-1 py-2">
-            <Text className="text-xs text-muted dark:text-muted-dark">Biaya</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">Cost</Text>
             <TextInput
-              className="font-extrabold text-5xl text-ink dark:text-ink-dark"
+              className="font-extrabold tabular-nums text-5xl text-ink dark:text-ink-dark"
               keyboardType="number-pad"
               placeholder="Rp0"
               placeholderTextColor={colors.muted}
@@ -153,17 +155,17 @@ export default function SubscriptionForm() {
           </View>
 
           <Input
-            label="Nama layanan"
+            label="Service name"
             icon="repeat-outline"
-            placeholder="Contoh: Netflix"
+            placeholder="For example, Netflix"
             value={name}
             onChangeText={setName}
             error={errors.name}
           />
           <Input
-            label="Catatan"
+            label="Notes"
             icon="document-text-outline"
-            placeholder="Contoh: Family plan"
+            placeholder="For example, family plan"
             value={description}
             onChangeText={setDescription}
           />
@@ -174,7 +176,9 @@ export default function SubscriptionForm() {
                 <Pressable
                   key={item.value}
                   onPress={() => setCycle(item.value)}
-                  className={`flex-1 rounded-2xl border py-3 ${
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: cycle === item.value }}
+                  className={`min-h-12 flex-1 rounded-xl border py-3 ${
                     cycle === item.value
                       ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
                       : 'border-line bg-card dark:border-line-dark dark:bg-card-dark'
@@ -193,13 +197,15 @@ export default function SubscriptionForm() {
           </View>
 
           <View className="gap-2">
-            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Kategori</Text>
+            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Category</Text>
             <View className="flex-row flex-wrap gap-2">
               {categories.map((item) => (
                 <Pressable
                   key={item}
                   onPress={() => setCategory(item)}
-                  className={`rounded-full border px-3.5 py-2 ${
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: category === item }}
+                  className={`min-h-10 justify-center rounded-lg border px-3.5 py-2 ${
                     category === item
                       ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
                       : 'border-line bg-card dark:border-line-dark dark:bg-card-dark'
@@ -218,10 +224,10 @@ export default function SubscriptionForm() {
           </View>
 
           <View className="gap-2">
-            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Tagihan berikutnya</Text>
+            <Text className="font-medium text-sm text-ink dark:text-ink-dark">Next bill</Text>
             <Pressable
               onPress={() => setShowDate(true)}
-              className="h-14 flex-row items-center gap-2.5 rounded-2xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
+              className="h-14 flex-row items-center gap-2.5 rounded-xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
             >
               <Ionicons name="calendar-outline" size={20} color={colors.muted} />
               <Text className="text-base text-ink dark:text-ink-dark">{formatDate(date)}</Text>
@@ -245,7 +251,9 @@ export default function SubscriptionForm() {
             <Pressable
               key={item.label}
               onPress={item.onPress}
-              className="h-14 flex-row items-center justify-between rounded-2xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: item.value }}
+              className="h-14 flex-row items-center justify-between rounded-xl border border-line bg-card px-4 dark:border-line-dark dark:bg-card-dark"
             >
               <Text className="font-medium text-sm text-ink dark:text-ink-dark">{item.label}</Text>
               <View
@@ -264,15 +272,14 @@ export default function SubscriptionForm() {
             <Text className="text-sm text-error dark:text-error-dark">{mutation.error.message}</Text>
           ) : null}
           <Button
-            title={isEdit ? 'Simpan Perubahan' : 'Simpan Subscription'}
-            variant="gradient"
+            title={isEdit ? 'Save changes' : 'Save subscription'}
             loading={mutation.isPending}
             onPress={submit}
           />
           {isEdit && (
             <Button
-              title="Hapus Subscription"
-              variant="ghost"
+              title="Delete subscription"
+              variant="quiet"
               loading={deleteSubscription.isPending}
               onPress={confirmDelete}
             />

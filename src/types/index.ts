@@ -2,12 +2,10 @@ export type TransactionType = 'income' | 'expense';
 
 export type PaymentMethodType =
   | 'cash'
-  | 'bank_transfer'
-  | 'debit_card'
-  | 'credit_card'
+  | 'bank'
   | 'e_wallet'
-  | 'qris'
-  | 'other';
+  | 'credit_card'
+  | 'paylater';
 
 export type GoalStatus = 'active' | 'completed' | 'cancelled';
 export type SubscriptionBillingCycle = 'weekly' | 'monthly' | 'yearly';
@@ -65,12 +63,34 @@ export interface Category {
   created_at: string;
 }
 
-export interface PaymentMethod {
+export interface Wallet {
   id: string;
   user_id: string;
   name: string;
   type: PaymentMethodType;
+  balance: number;
+  account_number: string | null;
   created_at: string;
+}
+
+export type PaymentMethod = Wallet;
+
+export interface ReceiptItem {
+  name: string;
+  amount: number;
+  qty: number;
+}
+
+export interface ReceiptDiscount {
+  name: string;
+  amount: number;
+}
+
+export interface ReceiptScan {
+  store_name: string;
+  transaction_date: string;
+  items: ReceiptItem[];
+  discounts: ReceiptDiscount[];
 }
 
 export interface Transaction {

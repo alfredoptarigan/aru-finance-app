@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
-import { gradients } from '@/constants/colors';
+import { PixelMark } from '@/components/PixelMark';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { useThemeColors } from '@/stores/theme';
 
 type AuthScaffoldProps = {
   title: string;
@@ -24,40 +24,35 @@ export function AuthScaffold({
   footerHref,
   children,
 }: AuthScaffoldProps) {
+  const colors = useThemeColors();
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-[#F7F4FF] dark:bg-bg-dark"
+      className="flex-1 bg-bg dark:bg-bg-dark"
     >
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="px-5 pb-10 pt-24">
-        <View className="mb-6 flex-row items-center gap-3">
-          <LinearGradient
-            colors={gradients.primary}
-            style={{ height: 42, width: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14 }}
-          >
-            <Ionicons name="analytics-outline" size={24} color="white" />
-          </LinearGradient>
-          <Text className="font-extrabold text-3xl text-ink dark:text-ink-dark">Ledgeria</Text>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="px-6 pb-10 pt-16">
+        <View className="mb-8 flex-row items-start gap-3">
+          <View className="min-w-0 flex-1 pt-5">
+            <Text className="font-medium text-sm tracking-[2px] text-primary dark:text-primary-dark">LEDGERIA</Text>
+            <Text className="mt-2 max-w-64 font-extrabold text-4xl leading-[42px] text-ink dark:text-ink-dark">{title}</Text>
+          </View>
+          <View className="shrink-0 rounded-2xl border border-line bg-card p-2 dark:border-line-dark dark:bg-card-dark">
+            <PixelMark size={88} />
+          </View>
         </View>
-
-        <Text className="font-extrabold text-3xl leading-10 text-ink dark:text-ink-dark">{title}</Text>
-        <Text className="mt-3 text-base text-muted dark:text-muted-dark">{subtitle}</Text>
-        <View className="mb-7 mt-5 h-1.5 w-10 rounded-full bg-primary" />
-
-        <View className="gap-5 rounded-[30px] bg-white p-6 shadow-lg shadow-primary/10 dark:bg-card-dark">
+        <Text className="mb-5 max-w-80 text-base leading-6 text-muted dark:text-muted-dark">{subtitle}</Text>
+        <View className="gap-5 border-y border-line py-6 dark:border-line-dark">
           {children}
         </View>
 
         <Link href={footerHref} asChild>
-          <Pressable className="mt-7 flex-row items-center rounded-3xl border border-line bg-white p-4 shadow-sm shadow-black/5 dark:border-line-dark dark:bg-card-dark">
-            <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Ionicons name="person-outline" size={24} color="#6366F1" />
-            </View>
+          <Pressable className="mt-6 min-h-14 flex-row items-center border-b border-line py-3 active:opacity-70 dark:border-line-dark">
             <View className="flex-1">
               <Text className="text-sm text-muted dark:text-muted-dark">{footerQuestion}</Text>
               <Text className="font-semibold text-base text-primary dark:text-primary-dark">{footerAction}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={22} color="#6B7280" />
+            <AppIcon name="chevronRight" size={20} color={colors.muted} />
           </Pressable>
         </Link>
       </ScrollView>

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
-const schema = z.object({ email: z.string().email('Email tidak valid') });
+const schema = z.object({ email: z.string().email('Enter a valid email') });
 type FormValues = z.infer<typeof schema>;
 
 // ponytail: backend belum expose endpoint reset password — tampilkan pesan
@@ -31,10 +31,10 @@ export default function ForgotPassword() {
       >
         <Card className="gap-4 p-5">
           <View className="gap-1">
-            <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Lupa Password</Text>
+            <Text className="font-bold text-2xl text-ink dark:text-ink-dark">Forgot password</Text>
             <Text className="text-sm text-muted dark:text-muted-dark">
-              Masukkan email kamu. Fitur reset password otomatis segera hadir — untuk saat ini
-              tim kami akan menghubungimu secara manual.
+              Enter your email. Automated password reset is not available yet, so our team will
+              follow up manually.
             </Text>
           </View>
 
@@ -45,7 +45,7 @@ export default function ForgotPassword() {
               <Input
                 label="Email"
                 icon="mail-outline"
-                placeholder="kamu@email.com"
+                placeholder="you@example.com"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={value}
@@ -57,16 +57,15 @@ export default function ForgotPassword() {
 
           {sent ? (
             <Text className="text-sm text-secondary dark:text-secondary-dark">
-              Permintaan tercatat. Kami akan menghubungimu lewat email tersebut.
+              Request recorded. We will contact you at that email address.
             </Text>
           ) : null}
 
           <Button
-            title="Kirim Permintaan"
-            variant="gradient"
+            title="Send request"
             onPress={handleSubmit(() => setSent(true))}
           />
-          <Button title="Kembali" variant="ghost" onPress={() => router.back()} />
+          <Button title="Back" variant="quiet" onPress={() => router.back()} />
         </Card>
       </KeyboardAvoidingView>
     </SafeAreaView>
