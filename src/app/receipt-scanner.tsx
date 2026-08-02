@@ -14,6 +14,7 @@ import { CategoryIcon } from '@/components/CategoryIcon';
 import { WalletPicker } from '@/components/WalletPicker';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useScanReceipt } from '@/features/receipts/hooks';
@@ -56,6 +57,8 @@ export default function ReceiptScanner() {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [combineItems, setCombineItems] = useState(false);
+  const [combineTitle, setCombineTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [walletId, setWalletId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -173,6 +176,8 @@ export default function ReceiptScanner() {
     setPreviewUri(null);
     setSourceName('');
     setSelected(new Set());
+    setCombineItems(false);
+    setCombineTitle('');
     setErrors({});
     setSubmitError('');
   };
@@ -199,23 +204,37 @@ export default function ReceiptScanner() {
     const date = /^\d{4}-\d{2}-\d{2}$/.test(draft.transaction_date)
       ? draft.transaction_date
       : new Date().toISOString().slice(0, 10);
-    const inputs = selectedIndices.map((index) => {
-      const item = draft.items[index];
-      return {
-        type: 'expense' as const,
-        amount: netAmounts[index],
-        title: item.name.trim() || 'Scanned item',
-        description: `Scanned from ${draft.store_name || 'receipt'}. Quantity: ${item.qty}.`,
-        category_id: categoryId,
-        transaction_date: date,
-        payment_method_id: walletId!,
-      };
-    });
+    const inputs = combineItems
+      ? [
+          {
+            type: 'expense' as const,
+            amount: selectedTotal,
+            title: combineTitle.trim() || draft.store_name.trim() || 'Scanned receipt',
+            description: `Scanned from ${draft.store_name || 'receipt'}. ${selectedIndices.length} items combined.`,
+            category_id: categoryId,
+            transaction_date: date,
+            payment_method_id: walletId!,
+          },
+        ]
+      : selectedIndices.map((index) => {
+          const item = draft.items[index];
+          return {
+            type: 'expense' as const,
+            amount: netAmounts[index],
+            title: item.name.trim() || 'Scanned item',
+            description: `Scanned from ${draft.store_name || 'receipt'}. Quantity: ${item.qty}.`,
+            category_id: categoryId,
+            transaction_date: date,
+            payment_method_id: walletId!,
+          };
+        });
 
     create.mutate(inputs, {
       onSuccess: (result) => {
         if (result.failedIndices.length) {
-          setSelected(new Set(result.failedIndices.map((index) => selectedIndices[index])));
+          if (!combineItems) {
+            setSelected(new Set(result.failedIndices.map((index) => selectedIndices[index])));
+          }
           setSubmitError(
             `${result.created.length} saved, ${result.failedIndices.length} failed. Retry saves only failed items.`,
           );
@@ -288,6 +307,37 @@ export default function ReceiptScanner() {
                 <Text className="text-xs text-white/70">{formatDate(draft.transaction_date)}</Text>
                 <Text className="text-xs text-white/70">{selected.size} of {draft.items.length} items</Text>
               </View>
+            </View>
+
+            <View className="gap-2 rounded-xl border border-line bg-card p-3 dark:border-line-dark dark:bg-card-dark">
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: combineItems }}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setCombineItems((current) => {
+                    const next = !current;
+                    if (next && !combineTitle.trim()) setCombineTitle(draft.store_name || '');
+                    return next;
+                  });
+                }}
+                className="min-h-11 flex-row items-center gap-3"
+              >
+                <View className={`h-6 w-6 items-center justify-center rounded-md border ${combineItems ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark' : 'border-line dark:border-line-dark'}`}>
+                  {combineItems ? <AppIcon name="success" size={16} color="#fff" /> : null}
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="font-medium text-sm text-ink dark:text-ink-dark">Combine into one transaction</Text>
+                  <Text className="text-xs text-muted dark:text-muted-dark">Save selected items as a single named entry.</Text>
+                </View>
+              </Pressable>
+              {combineItems ? (
+                <Input
+                  placeholder="e.g. Belanja Bulanan"
+                  value={combineTitle}
+                  onChangeText={setCombineTitle}
+                />
+              ) : null}
             </View>
 
             <View className="gap-2">
@@ -370,7 +420,12 @@ export default function ReceiptScanner() {
             <WalletPicker value={walletId} onChange={setWalletId} error={errors.wallet} helper="Selected total will be debited from this wallet." />
 
             {submitError ? <Text className="text-sm text-error dark:text-error-dark">{submitError}</Text> : null}
-            <Button title={`Save ${selected.size} ${selected.size === 1 ? 'transaction' : 'transactions'}`} loading={create.isPending} disabled={!selected.size} onPress={saveTransactions} />
+            <Button
+              title={combineItems ? 'Save as 1 transaction' : `Save ${selected.size} ${selected.size === 1 ? 'transaction' : 'transactions'}`}
+              loading={create.isPending}
+              disabled={!selected.size}
+              onPress={saveTransactions}
+            />
             <Button title="Scan another receipt" variant="quiet" disabled={create.isPending} onPress={startOver} />
           </>
         )}
