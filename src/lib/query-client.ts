@@ -28,4 +28,7 @@ export const qk = {
     ['budget-plans', 'available-balance', year, month] as const,
   budgetPlanTemplates: ['budget-plans', 'templates'] as const,
   goals: ['goals'] as const,
+  splitBills: ['split-bills'] as const,
+  splitBillList: (page: number) => ['split-bills', 'list', page] as const,
+  splitBillDetail: (id: string) => ['split-bills', 'detail', id] as const,
 };

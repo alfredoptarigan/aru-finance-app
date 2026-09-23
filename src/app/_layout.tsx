@@ -77,6 +77,9 @@ export default function RootLayout() {
             <Stack.Screen name="insights" />
             <Stack.Screen name="upcoming-bills" />
             <Stack.Screen name="wallets" />
+            <Stack.Screen name="split-bills" />
+            <Stack.Screen name="split-bill/[id]" />
+            <Stack.Screen name="split-bill-editor" options={{ presentation: 'modal' }} />
             <Stack.Screen name="receipt-scanner" options={{ presentation: 'modal' }} />
             <Stack.Screen name="transaction-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />

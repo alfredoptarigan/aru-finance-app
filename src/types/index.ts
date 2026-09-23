@@ -388,6 +388,82 @@ export interface InsightsData {
   year: number;
 }
 
+export interface SplitBillParticipant {
+  id: string;
+  name: string;
+  is_paid: boolean;
+}
+
+export interface SplitBillItem {
+  id: string;
+  name: string;
+  qty: number;
+  amount: number;
+  participant_ids: string[];
+}
+
+export type SplitBillAdjustmentKind = 'discount' | 'fee';
+
+export interface SplitBillAdjustment {
+  id: string;
+  name: string;
+  kind: SplitBillAdjustmentKind;
+  amount: number;
+}
+
+export interface SplitBillData {
+  participants: SplitBillParticipant[];
+  items: SplitBillItem[];
+  adjustments: SplitBillAdjustment[];
+}
+
+export type SplitBillStatus = 'draft' | 'final';
+
+export interface SplitBill {
+  id: string;
+  user_id: string;
+  merchant_name: string;
+  bill_date: string;
+  currency: 'IDR';
+  receipt_total: number;
+  status: SplitBillStatus;
+  data: SplitBillData;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ParticipantBreakdown {
+  participant_id: string;
+  name: string;
+  is_paid: boolean;
+  subtotal: number;
+  discount_share: number;
+  fee_share: number;
+  total: number;
+}
+
+export interface SplitBillBreakdown {
+  participants: ParticipantBreakdown[];
+  items_subtotal: number;
+  discount_total: number;
+  fee_total: number;
+  grand_total: number;
+}
+
+export interface SplitBillScan {
+  merchant_name: string;
+  bill_date: string;
+  items: { name: string; qty: number; amount: number }[];
+  discounts: { name: string; amount: number }[];
+  fees: { name: string; amount: number }[];
+  grand_total: number;
+}
+
+export function getSplitBillDisplayStatus(bill: SplitBill): 'Draft' | 'Final' | 'Selesai' {
+  if (bill.status === 'draft') return 'Draft';
+  return bill.data.participants.every((participant) => participant.is_paid) ? 'Selesai' : 'Final';
+}
+
 export interface Paginated<T> {
   items: T[];
   total: number;

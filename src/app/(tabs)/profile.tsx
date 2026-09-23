@@ -205,6 +205,7 @@ export default function Profile() {
         {/* Menu */}
         <View className="border-t border-line dark:border-line-dark">
           <MenuRow icon="wallet-outline" label="Wallets" onPress={() => router.push('/wallets')} />
+          <MenuRow icon="people-outline" label="Split Bill" onPress={() => router.push('/split-bills')} />
           <MenuRow icon="flag-outline" label="Savings goals" onPress={() => router.push('/goals')} />
           <MenuRow icon="bulb-outline" label="Insights" onPress={() => router.push('/insights')} />
           <MenuRow icon="cash-outline" label="Currency" value="IDR (Rp)" />
